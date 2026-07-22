@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">مُتابِعي</string>
+    <string name="settings_title">تنبيهات الأذان والإيقاظ</string>
+    <string name="channel_adhan">الأذان والإقامة</string>
+    <string name="channel_pre">قرب وقت الصلاة</string>
+    <string name="channel_wake">منبّه الاستيقاظ</string>
+</resources>
