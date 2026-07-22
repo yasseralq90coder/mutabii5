@@ -1,0 +1,8 @@
+<resources>
+    <color name="bg">#FF1A1410</color>
+    <color name="card">#FF2A2116</color>
+    <color name="gold">#FFC9A44C</color>
+    <color name="text">#FFF2E9D8</color>
+    <color name="muted">#FF9A8A6E</color>
+    <color name="ic_bg">#FF1A1410</color>
+</resources>
