@@ -1218,7 +1218,8 @@ function openSettings(){
    row('alrmodal','🔔','التنبيهات والأذان والإيقاظ',(data.alerts&&data.alerts.on)?'مُفعّلة ✓':'مُعطّلة')
   +row('editiqama','⏱️','مدد الإقامة بعد الأذان','لكل صلاة على حدة')
   +row('icsexp','📅','تصدير المواقيت لتقويم الجهاز','منبّهات النظام — تعمل والتطبيق مغلق','',' data-d="90"')
-  +row('pwainstall','📲','تثبيت التطبيق بأيقونة','يعمل كتطبيق مستقل بلا متصفح'))
+  +row('pwainstall','📲','تثبيت التطبيق بأيقونة','يعمل كتطبيق مستقل بلا متصفح')
+  +((window.MTBNative&&MTBNative.openSettings)?row('nativealarm','⚙️','إعدادات النظام (تنبيهات دقيقة والبطارية)','مطلوبة لعمل الأذان والإيقاظ والتطبيق مغلق'):''))
 
  +card('📖 القرآن والصوت',
    row('editgoal','🎯','هدف الختمة','عدد الختمات ومدتها أو تاريخ الإنجاز')
@@ -3711,6 +3712,7 @@ document.addEventListener('click',function(e){
   case 'alrfile':alrPickFile();break;
   case 'icsexp':icsExport(+el.dataset.d);break;
   case 'pwainstall':pwaInstall();break;
+  case 'nativealarm':try{MTBNative.openSettings();}catch(e){}break;
   case 'alrtest':alrUnlock();alrPlay();toast('▶️ تجربة صوت التنبيه');break;
   case 'waketoggle':{const a=alr();a.wake.on=!a.wake.on;if(a.wake.on&&!a.on)a.on=true;save();alrUnlock();alrModal();}break;
   case 'wakemode':{const a=alr();a.wake.mode=el.dataset.k;save();alrModal();}break;
@@ -4709,7 +4711,7 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
   function mediaSync(force){
     try{
       if(!window.MTBNative||!MTBNative.mediaUpdate) return;
-      var st=window.audioState;
+      var st=audioState;
       if(!st||!st.surah){
         if(_last!=='off'){ _last='off'; try{ MTBNative.mediaStop(); }catch(e){} }
         return;
@@ -4731,21 +4733,21 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
     try{
       switch(cmd){
         case 'play':
-          if(window.audioState&&audioState.surah){ if(typeof resumeAudio==='function') resumeAudio(); }
+          if(audioState&&audioState.surah){ if(typeof resumeAudio==='function') resumeAudio(); }
           else if(typeof playSurah==='function') playSurah(arg&&+arg>0?+arg:1);
           break;
         case 'pause': if(typeof pauseAudio==='function') pauseAudio(); break;
         case 'toggle':
-          if(window.audioState&&audioState.playing){ if(typeof pauseAudio==='function') pauseAudio(); }
+          if(audioState&&audioState.playing){ if(typeof pauseAudio==='function') pauseAudio(); }
           else if(typeof resumeAudio==='function') resumeAudio();
           break;
         case 'stop': if(typeof stopAudio==='function') stopAudio(); break;
         case 'next':
-          if(window.audioState&&audioState.surah&&audioState.surah<114&&typeof playSurah==='function')
+          if(audioState&&audioState.surah&&audioState.surah<114&&typeof playSurah==='function')
             playSurah(audioState.surah+1);
           break;
         case 'prev':
-          if(window.audioState&&audioState.surah&&audioState.surah>1&&typeof playSurah==='function')
+          if(audioState&&audioState.surah&&audioState.surah>1&&typeof playSurah==='function')
             playSurah(audioState.surah-1);
           break;
         case 'ff': if(typeof seekBy==='function') seekBy(+arg||30); break;
@@ -4778,7 +4780,8 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
     }catch(e){}
   }
 
-  function init(){ addBtn(); nativeSync(); mediaSync(true); }
+  /* أُزيل الزر العائم ⏰ — يُفتح ضبط النظام الآن من: الإعدادات ⚙️ ← الصلاة والمواقيت ← إعدادات النظام */
+  function init(){ nativeSync(); mediaSync(true); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){ setTimeout(init,1600); });
   else setTimeout(init,1600);
   document.addEventListener('visibilitychange',function(){ if(!document.hidden){ setTimeout(nativeSync,700); mediaSync(true); } });

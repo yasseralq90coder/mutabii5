@@ -122,21 +122,22 @@ class MediaService : MediaBrowserService() {
         )
 
         val n = buildNotif(s)
-        if (MediaState.playing) {
-            if (!inForeground) {
-                try {
-                    if (Build.VERSION.SDK_INT >= 29)
-                        startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-                    else startForeground(NOTIF_ID, n)
-                    inForeground = true
-                } catch (_: Exception) {}
-            } else notifyOnly(n)
+        // إلزامي: بعد startForegroundService يجب استدعاء startForeground خلال ٥ ثوانٍ
+        // وإلا انهار التطبيق (ForegroundServiceDidNotStartInTime) — حتى لو كان متوقفاً مؤقتاً.
+        if (!inForeground) {
+            try {
+                if (Build.VERSION.SDK_INT >= 29)
+                    startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                else startForeground(NOTIF_ID, n)
+                inForeground = true
+            } catch (_: Exception) { notifyOnly(n) }
         } else {
             notifyOnly(n)
-            if (inForeground) {
-                try { stopForeground(Service.STOP_FOREGROUND_DETACH) } catch (_: Exception) {}
-                inForeground = false
-            }
+        }
+        // عند الإيقاف المؤقت: أبقِ الإشعار ظاهراً لكن افصل الخدمة عن الواجهة الأمامية
+        if (!MediaState.playing && inForeground) {
+            try { stopForeground(Service.STOP_FOREGROUND_DETACH) } catch (_: Exception) {}
+            inForeground = false
         }
     }
 
