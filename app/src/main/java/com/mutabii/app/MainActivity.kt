@@ -146,6 +146,14 @@ class MainActivity : android.app.Activity() {
                 ) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             } catch (_: Exception) {}
         }
+        // أندرويد ٩ وأقل: صلاحية الكتابة ليصل تصدير JSON إلى مجلد التنزيلات الحقيقي
+        if (Build.VERSION.SDK_INT <= 28) {
+            try {
+                if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED
+                ) requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 102)
+            } catch (_: Exception) {}
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

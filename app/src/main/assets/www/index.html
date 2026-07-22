@@ -4655,6 +4655,32 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
   'use strict';
   if(!window.MTBNative){ return; }
 
+  /* ───────── (0) تصدير الملفات: WebView لا يُنزّل blob — نمرّرها للطبقة الأصلية ───────── */
+  try{
+    var _origDownload=window.download;
+    window.download=function(content,filename,mime){
+      try{
+        if(window.MTBNative&&MTBNative.saveText){
+          MTBNative.saveText(String(filename||'mutabii-backup'),String(mime||'application/octet-stream'),String(content));
+          return;
+        }
+      }catch(e){}
+      if(typeof _origDownload==='function') return _origDownload.apply(this,arguments);
+    };
+    var _origIcs=window.icsDownload;
+    window.icsDownload=function(blob,fn,n){
+      try{
+        if(window.MTBNative&&MTBNative.saveText&&blob&&blob.text){
+          blob.text().then(function(txt){
+            try{ MTBNative.saveText(String(fn||'mutabii.ics'),'text/calendar',txt); }catch(e){}
+          });
+          return;
+        }
+      }catch(e){}
+      if(typeof _origIcs==='function') return _origIcs.apply(this,arguments);
+    };
+  }catch(e){}
+
   /* ───────── (1) مواقيت الصلاة للطبقة الأصلية ───────── */
   function _ms(y,m,d,hhmm){
     if(!hhmm||hhmm.indexOf(':')<0) return 0;

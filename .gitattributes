@@ -1,0 +1,5 @@
+*.keystore binary
+*.jks binary
+*.wav binary
+*.png binary
+*.jpg binary

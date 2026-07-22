@@ -13,13 +13,25 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        // مفتاح توقيع ثابت — يضمن أن كل تحديث يُثبَّت فوق القديم بلا حذف (نفس التوقيع دائماً)
+        stable {
+            storeFile file('mutabii-stable.keystore')
+            storePassword 'mutabii123'
+            keyAlias 'mutabii'
+            keyPassword 'mutabii123'
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix ""
+            signingConfig signingConfigs.stable
         }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.stable
         }
     }
     compileOptions {
