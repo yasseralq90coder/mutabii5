@@ -9,6 +9,9 @@ import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.ViewGroup
+import android.view.WindowInsets
+import android.view.WindowInsetsController
+import android.view.WindowManager
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -23,10 +26,22 @@ class MainActivity : android.app.Activity() {
     private var web: WebView? = null
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private val REQ_FILE = 777
+    private var lastFull = false
+
+    companion object {
+        @Volatile private var current: java.lang.ref.WeakReference<MainActivity>? = null
+
+        /** تُستدعى من الجسر لتفعيل/إلغاء وضع ملء الشاشة (يخفي أشرطة النظام). */
+        fun setFullscreenMode(full: Boolean) {
+            val a = current?.get() ?: return
+            a.runOnUiThread { a.applyImmersive(full) }
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        current = java.lang.ref.WeakReference(this)
         Notif.ensure(this)
 
         val container = FrameLayout(this)
@@ -166,11 +181,36 @@ class MainActivity : android.app.Activity() {
 
     override fun onResume() {
         super.onResume()
+        current = java.lang.ref.WeakReference(this)
         try {
             web?.evaluateJavascript(
                 "window.__mtbSync && window.__mtbSync(); window.__mtbMediaSync && window.__mtbMediaSync();",
                 null
             )
+        } catch (_: Exception) {}
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // إعادة تطبيق الوضع الغامر بعد استعادة التركيز (يعود النظام لإظهار الأشرطة أحياناً)
+        if (hasFocus && lastFull) applyImmersive(true)
+    }
+
+    /** يخفي/يُظهر شريط حالة النظام (يبقى شريط التنقّل ليتوافق مع تبويبات التطبيق السفلية). */
+    @Suppress("DEPRECATION")
+    fun applyImmersive(full: Boolean) {
+        lastFull = full
+        try {
+            val w = window ?: return
+            if (Build.VERSION.SDK_INT >= 30) {
+                val c = w.insetsController ?: return
+                c.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                if (full) c.hide(WindowInsets.Type.statusBars())
+                else c.show(WindowInsets.Type.statusBars())
+            } else {
+                if (full) w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                else w.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            }
         } catch (_: Exception) {}
     }
 

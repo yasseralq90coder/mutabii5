@@ -1218,7 +1218,7 @@ function openSettings(){
    row('alrmodal','🔔','التنبيهات والأذان والإيقاظ',(data.alerts&&data.alerts.on)?'مُفعّلة ✓':'مُعطّلة')
   +row('editiqama','⏱️','مدد الإقامة بعد الأذان','لكل صلاة على حدة')
   +row('icsexp','📅','تصدير المواقيت لتقويم الجهاز','منبّهات النظام — تعمل والتطبيق مغلق','',' data-d="90"')
-  +row('pwainstall','📲','تثبيت التطبيق بأيقونة','يعمل كتطبيق مستقل بلا متصفح')
+  +(window.MTBNative?'':row('pwainstall','📲','تثبيت التطبيق بأيقونة','يعمل كتطبيق مستقل بلا متصفح'))
   +((window.MTBNative&&MTBNative.openSettings)?row('nativealarm','⚙️','إعدادات النظام (تنبيهات دقيقة والبطارية)','مطلوبة لعمل الأذان والإيقاظ والتطبيق مغلق'):''))
 
  +card('📖 القرآن والصوت',
@@ -3648,7 +3648,7 @@ document.addEventListener('click',function(e){
   case 'qbyes':abandonReader();break;
   case 'qbcancel':if(reader){reader.back=false;render();}break;
   case 'qchrome':{if(swFired){swFired=false;break;}if(reader&&!reader.confirm){reader.hc=!reader.hc;if(!reader.hc&&dispMode()!=='full')exitFullscreen();render();}}break;
-  case 'qfs':if(reader&&!reader.confirm){reader.hc=true;try{const el=document.documentElement;const rq=el.requestFullscreen||el.webkitRequestFullscreen;if(rq&&!document.fullscreenElement)rq.call(el).catch(function(){});}catch(e){}render();toast('⛶ ملء الشاشة — المس الزاوية العليا اليسرى أو الصفحة للخروج','ok',2800);}break;
+  case 'qfs':if(reader&&!reader.confirm){reader.hc=true;try{if(window.__mtbFsForce){__mtbFsForce(true);}else{const el=document.documentElement;const rq=el.requestFullscreen||el.webkitRequestFullscreen;if(rq&&!document.fullscreenElement)rq.call(el).catch(function(){});}}catch(e){}render();toast('⛶ ملء الشاشة — المس الزاوية العليا اليسرى أو الصفحة للخروج','ok',2800);}break;
   case 'qgear':if(reader){reader.gear=true;render();}break;
   case 'qgearclose':if(reader){reader.gear=false;render();}break;
   case 'qfull':data.qFull=data.qFull===false?true:false;save();render();break;
@@ -4679,6 +4679,14 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
       }catch(e){}
       if(typeof _origIcs==='function') return _origIcs.apply(this,arguments);
     };
+    var _origShare=window.shareText;
+    window.shareText=function(txt){
+      try{
+        var t=String(txt||'').trim(); if(!t) return;
+        if(window.MTBNative&&MTBNative.shareText){ MTBNative.shareText(t); return; }
+      }catch(e){}
+      if(typeof _origShare==='function') return _origShare.apply(this,arguments);
+    };
   }catch(e){}
 
   /* ───────── (1) مواقيت الصلاة للطبقة الأصلية ───────── */
@@ -4714,12 +4722,24 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
     }catch(e){}
   }
 
-  /* الأذان والإيقاظ تتكفّل بهما الطبقة الأصلية */
-  try{ window.alrPlay=function(){}; }catch(e){}
-  try{ window.alrWake=function(){}; }catch(e){}
+  /* الأذان المجدول تتكفّل به الطبقة الأصلية: نعطّل جدولة الويب فقط (alrTick)،
+     ونُبقي alrPlay/alrWake تعملان حتى تشتغل أزرار «تجربة التنبيه/الإيقاظ». */
+  try{ window.alrTick=function(){}; }catch(e){}
   try{
     var _t=window.toast;
     window.alrNotify=function(t,b){ try{ if(_t) _t('🔔 '+t+' — '+b,'warn'); }catch(e){} };
+  }catch(e){}
+
+  /* ملء الشاشة عبر الطبقة الأصلية — requestFullscreen في WebView لا يخفي أشرطة النظام */
+  try{
+    window.goFullscreen=function(){
+      try{ if(typeof dispMode==='function'&&dispMode()!=='full') return;
+           if(MTBNative.setFullscreen) MTBNative.setFullscreen(true); }catch(e){}
+    };
+    window.exitFullscreen=function(){
+      try{ if(MTBNative.setFullscreen) MTBNative.setFullscreen(false); }catch(e){}
+    };
+    window.__mtbFsForce=function(on){ try{ if(MTBNative.setFullscreen) MTBNative.setFullscreen(!!on); }catch(e){} };
   }catch(e){}
 
   /* ───────── (2) مشغّل القرآن: مزامنة الحالة مع شريط الإشعارات ───────── */
@@ -4807,7 +4827,8 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
   }
 
   /* أُزيل الزر العائم ⏰ — يُفتح ضبط النظام الآن من: الإعدادات ⚙️ ← الصلاة والمواقيت ← إعدادات النظام */
-  function init(){ nativeSync(); mediaSync(true); }
+  function init(){ nativeSync(); mediaSync(true);
+    try{ if(typeof applyDispMode==='function') applyDispMode(); }catch(e){} }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){ setTimeout(init,1600); });
   else setTimeout(init,1600);
   document.addEventListener('visibilitychange',function(){ if(!document.hidden){ setTimeout(nativeSync,700); mediaSync(true); } });

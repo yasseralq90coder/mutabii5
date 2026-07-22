@@ -63,6 +63,26 @@ class AlarmBridge(private val ctx: Context) {
     @JavascriptInterface
     fun ping(): String = "ok"
 
+    /** ملء الشاشة: يخفي/يُظهر أشرطة النظام (WebView لا يستطيع ذلك بنفسه). */
+    @JavascriptInterface
+    fun setFullscreen(full: Boolean) {
+        try { MainActivity.setFullscreenMode(full) } catch (_: Exception) {}
+    }
+
+    /** مشاركة نصية عبر قائمة مشاركة أندرويد الحقيقية (navigator.share لا يعمل في WebView). */
+    @JavascriptInterface
+    fun shareText(text: String) {
+        try {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            ctx.startActivity(
+                Intent.createChooser(send, "مشاركة").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: Exception) {}
+    }
+
     /**
      * يحفظ ملفاً نصياً (JSON / CSV / ICS) في مجلد التنزيلات العام.
      * WebView لا يُنفّذ تنزيل blob تلقائياً، لذا يمرّ التصدير عبر هذه الدالة.
