@@ -7,10 +7,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.content.Context
 import android.view.KeyEvent
 import android.view.ViewGroup
-import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
@@ -42,6 +41,12 @@ class MainActivity : android.app.Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         current = java.lang.ref.WeakReference(this)
+        // طبّق وضع ملء الشاشة المحفوظ فوراً (الافتراضي: مُفعّل) قبل رسم الواجهة
+        try {
+            val savedFull = getSharedPreferences("mtb_ui", Context.MODE_PRIVATE)
+                .getBoolean("fullscreen", true)
+            applyImmersive(savedFull)
+        } catch (_: Exception) {}
         Notif.ensure(this)
 
         val container = FrameLayout(this)
@@ -196,21 +201,22 @@ class MainActivity : android.app.Activity() {
         if (hasFocus && lastFull) applyImmersive(true)
     }
 
-    /** يخفي/يُظهر شريط حالة النظام (يبقى شريط التنقّل ليتوافق مع تبويبات التطبيق السفلية). */
+    /**
+     * يخفي/يُظهر شريط حالة النظام لكامل التطبيق.
+     * نستخدم FLAG_FULLSCREEN لأنه يعمل يقيناً على كل الإصدارات (حتى أندرويد 14 مع targetSdk 34)
+     * ولا يزاحم شريط التنقّل السفلي كما يفعل الوضع edge-to-edge.
+     */
     @Suppress("DEPRECATION")
     fun applyImmersive(full: Boolean) {
         lastFull = full
         try {
             val w = window ?: return
-            if (Build.VERSION.SDK_INT >= 30) {
-                val c = w.insetsController ?: return
-                c.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                if (full) c.hide(WindowInsets.Type.statusBars())
-                else c.show(WindowInsets.Type.statusBars())
-            } else {
-                if (full) w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                else w.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            }
+            if (full) w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            else w.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        } catch (_: Exception) {}
+        try {
+            getSharedPreferences("mtb_ui", Context.MODE_PRIVATE)
+                .edit().putBoolean("fullscreen", full).apply()
         } catch (_: Exception) {}
     }
 
