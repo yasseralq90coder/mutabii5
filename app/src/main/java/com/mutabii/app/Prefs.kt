@@ -33,6 +33,9 @@ object Prefs {
     const val K_WAKE_SNOOZE_MAX = "wake_snooze_max"
     const val K_WAKE_AUTOSTOP = "wake_autostop_min"
     const val K_WAKE_SNOOZE_USED = "wake_snooze_used"
+    const val K_WAKE_RETRIES = "wake_retries"          // كم مرة يعاود الإيقاظ إن تجاهلته
+    const val K_WAKE_RETRY_MIN = "wake_retry_min"      // الفاصل بين المعاودات
+    const val K_WAKE_RETRIES_LEFT = "wake_retries_left"
 
     val PRAYERS = arrayOf("fajr", "dhuhr", "asr", "maghrib", "isha")
     val PRAYER_AR = arrayOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
@@ -67,4 +70,10 @@ object Prefs {
 
     fun snoozeUsed(c: Context) = sp(c).getInt(K_WAKE_SNOOZE_USED, 0)
     fun setSnoozeUsed(c: Context, v: Int) = sp(c).edit().putInt(K_WAKE_SNOOZE_USED, v).apply()
+
+    fun wakeRetries(c: Context) = sp(c).getInt(K_WAKE_RETRIES, 3)
+    fun wakeRetryMin(c: Context) = sp(c).getInt(K_WAKE_RETRY_MIN, 3)
+    fun wakeRetriesLeft(c: Context) = sp(c).getInt(K_WAKE_RETRIES_LEFT, wakeRetries(c))
+    fun setWakeRetriesLeft(c: Context, v: Int) = sp(c).edit().putInt(K_WAKE_RETRIES_LEFT, v).apply()
+    fun resetWakeRetries(c: Context) = setWakeRetriesLeft(c, wakeRetries(c))
 }

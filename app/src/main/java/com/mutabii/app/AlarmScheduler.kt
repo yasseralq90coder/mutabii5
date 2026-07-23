@@ -171,6 +171,27 @@ object AlarmScheduler {
         return cal.timeInMillis
     }
 
+    /** معاودة الإيقاظ بعد تجاهله — لا يستسلم حتى تُوقفه بالتحدّي. */
+    fun scheduleWakeRetry(c: Context, minutes: Int) {
+        try {
+            val am = c.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val t = System.currentTimeMillis() + minutes.coerceAtLeast(1) * 60000L
+            val i = Intent(c, AlarmReceiver::class.java).apply {
+                action = ACTION_FIRE
+                putExtra("type", "wake"); putExtra("prayer", -1)
+                putExtra("title", "⏰ الإيقاظ — لم تقم بعد")
+                putExtra("text", "الصلاةُ خيرٌ من النوم")
+                putExtra("t", t)
+                putExtra("retry", true)
+            }
+            val pi = PendingIntent.getBroadcast(
+                c, CODE_BASE + 70000, i,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            scheduleExact(am, c, t, pi)
+        } catch (_: Exception) {}
+    }
+
     /** جدولة غفوة لمرة واحدة. */
     fun scheduleSnooze(c: Context, minutes: Int) {
         try {
@@ -181,6 +202,7 @@ object AlarmScheduler {
                 putExtra("type", "wake"); putExtra("prayer", -1)
                 putExtra("title", "⏰ الإيقاظ (غفوة)"); putExtra("text", "حان وقت القيام")
                 putExtra("t", t)
+                putExtra("retry", true)   // استمرارٌ لإيقاظ اليوم لا إيقاظ جديد — لا يُصفّر العدّادات
             }
             val pi = PendingIntent.getBroadcast(
                 c, CODE_BASE + 80000, i,

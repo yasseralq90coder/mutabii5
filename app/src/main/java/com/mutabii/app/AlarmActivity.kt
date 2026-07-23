@@ -187,11 +187,24 @@ class AlarmActivity : Activity() {
     private fun dismiss() {
         stopSound()
         Prefs.setSnoozeUsed(this, 0)
+        Prefs.resetWakeRetries(this)   // قُمتَ فعلاً — أوقف المعاودات
         try { AlarmScheduler.rescheduleAll(this) } catch (_: Exception) {}
         finish()
     }
 
     override fun onBackPressed() { /* لا يُغلق بالرجوع */ }
+
+    /** أزرار الصوت لا تُسكت الإيقاظ ولا تُغلق الشاشة — الإيقاف بالتحدّي وحده. */
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        return when (keyCode) {
+            android.view.KeyEvent.KEYCODE_VOLUME_UP,
+            android.view.KeyEvent.KEYCODE_VOLUME_DOWN,
+            android.view.KeyEvent.KEYCODE_VOLUME_MUTE,
+            android.view.KeyEvent.KEYCODE_CAMERA,
+            android.view.KeyEvent.KEYCODE_HEADSETHOOK -> true
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 }

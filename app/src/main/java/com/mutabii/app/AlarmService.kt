@@ -27,6 +27,11 @@ class AlarmService : Service() {
     private val h = Handler(Looper.getMainLooper())
     private var stopper: Runnable? = null
     private var ramper: Runnable? = null
+    private var volObs: android.database.ContentObserver? = null
+    private var curMode = "adhan"
+    private var guardVol = false      // وضع الإيقاظ: يمنع خفض الصوت للإسكات
+    private var lastVol = -1
+    private var userVol = -1          // مستوى صوت المنبّه قبل التنبيه — يُعاد بعده
 
     override fun onBind(i: Intent?): IBinder? = null
 
@@ -45,14 +50,35 @@ class AlarmService : Service() {
         val volStart = (intent?.getIntExtra("volStart", 80) ?: 80).coerceIn(0, 100)
         val rampSec = intent?.getIntExtra("rampSec", 0) ?: 0
 
+        // تنبيه جديد فوق تنبيه جارٍ: أزِل مؤقتات السابق ومراقبه حتى لا يتراكما
+        try { stopper?.let { h.removeCallbacks(it) } } catch (_: Exception) {}
+        try { ramper?.let { h.removeCallbacks(it) } } catch (_: Exception) {}
+        try { volObs?.let { contentResolver.unregisterContentObserver(it) } } catch (_: Exception) {}
+        volObs = null
+
+        curMode = mode
         startForegroundNotif(mode, title, text)
         acquireWake()
         forceStreamVolume(forceMax)
         startAudio(mode, uriStr, loop, volStart, rampSec)
         if (vibrate) startVibrate()
+        // زر الصوت: يوقف الأذان (سلوك متوقَّع)، ولا يُسكت الإيقاظ (يُعاد رفعه)
+        guardVol = (mode == "wake")
+        h.postDelayed({ watchVolumeKeys() }, 1200)
 
         if (autoStopMs > 0) {
-            stopper = Runnable { stopEverything() }
+            stopper = Runnable {
+                // الإيقاظ لا يستسلم: إن انقضى الوقت ولم تُوقفه بالتحدّي، يعود بعد قليل.
+                if (curMode == "wake") {
+                    val left = Prefs.wakeRetriesLeft(this)
+                    if (left > 0) {
+                        Prefs.setWakeRetriesLeft(this, left - 1)
+                        try { AlarmScheduler.scheduleWakeRetry(this, Prefs.wakeRetryMin(this)) }
+                        catch (_: Exception) {}
+                    }
+                }
+                stopEverything()
+            }
             h.postDelayed(stopper!!, autoStopMs)
         }
         return START_STICKY
@@ -69,16 +95,18 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val ch = if (mode == "wake") Notif.CH_WAKE else Notif.CH_ADHAN
-        val stopLabel = if (mode == "wake") "🛑 إيقاف" else "🛑 إيقاف الأذان"
+        val wake = (mode == "wake")
         @Suppress("DEPRECATION")
-        val n = Notification.Builder(this, ch)
+        val b = Notification.Builder(this, ch)
             .setSmallIcon(R.drawable.ic_notify)
             .setContentTitle(title).setContentText(text)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_ALARM)
-            .setContentIntent(open)
-            .addAction(R.drawable.ic_notify, stopLabel, stopPi)
-            .build()
+            .setContentIntent(if (wake) wakeScreenPi(title, text) else open)
+        // في الإيقاظ لا يوجد زر إيقاف في الشعار — الإيقاف يمرّ بشاشة التحدّي وحدها،
+        // وإلا أسكتّه من ستارة الإشعارات وأنت نصف نائم وعدت للنوم.
+        if (!wake) b.addAction(R.drawable.ic_notify, "🛑 إيقاف الأذان", stopPi)
+        val n = b.build()
         val id = if (mode == "wake") Notif.ID_WAKE else Notif.ID_ADHAN
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
@@ -87,9 +115,53 @@ class AlarmService : Service() {
         }
     }
 
+    /** الضغط على شعار الإيقاظ يفتح شاشة التحدّي لا الواجهة الرئيسية. */
+    private fun wakeScreenPi(title: String, text: String): PendingIntent {
+        val act = Intent(this, AlarmActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("title", title); putExtra("text", text)
+        }
+        return PendingIntent.getActivity(
+            this, 35, act, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /**
+     * زر الصوت أثناء التنبيه.
+     * لا يصل الزر إلى خدمة تعمل في الخلفية، فنراقب تغيّر مستوى المنبّه بدلاً منه:
+     *  • الأذان → أي ضغطة توقفه (هذا ما يتوقعه المستخدم).
+     *  • الإيقاظ → نُعيد رفع الصوت فوراً حتى لا يُسكَت وأنت نصف نائم.
+     */
+    private fun watchVolumeKeys() {
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            lastVol = am.getStreamVolume(AudioManager.STREAM_ALARM)
+            val obs = object : android.database.ContentObserver(h) {
+                override fun onChange(selfChange: Boolean) {
+                    try {
+                        val v = am.getStreamVolume(AudioManager.STREAM_ALARM)
+                        if (v == lastVol) return
+                        if (guardVol) {
+                            lastVol = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+                            am.setStreamVolume(AudioManager.STREAM_ALARM, lastVol, 0)
+                        } else {
+                            stopEverything()
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+            contentResolver.registerContentObserver(
+                android.provider.Settings.System.CONTENT_URI, true, obs
+            )
+            volObs = obs
+        } catch (_: Exception) {}
+    }
+
     private fun forceStreamVolume(forceMax: Boolean) {
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            // نحفظ مستوى المستخدم لنُعيده عند الانتهاء — وإلا بقي جهازه على أقصى صوت
+            if (userVol < 0) userVol = am.getStreamVolume(AudioManager.STREAM_ALARM)
             val max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             val target = if (forceMax) max else (max * 0.9).toInt().coerceAtLeast(1)
             am.setStreamVolume(AudioManager.STREAM_ALARM, target, 0)
@@ -186,6 +258,17 @@ class AlarmService : Service() {
     }
 
     private fun stopEverything() {
+        guardVol = false
+        try { volObs?.let { contentResolver.unregisterContentObserver(it) } } catch (_: Exception) {}
+        volObs = null
+        // أعِد مستوى صوت المنبّه كما كان قبل التنبيه
+        try {
+            if (userVol >= 0) {
+                val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                am.setStreamVolume(AudioManager.STREAM_ALARM, userVol, 0)
+                userVol = -1
+            }
+        } catch (_: Exception) {}
         try { stopper?.let { h.removeCallbacks(it) } } catch (_: Exception) {}
         try { ramper?.let { h.removeCallbacks(it) } } catch (_: Exception) {}
         try { mp?.stop() } catch (_: Exception) {}

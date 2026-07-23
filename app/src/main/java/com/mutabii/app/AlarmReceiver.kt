@@ -61,6 +61,10 @@ class AlarmReceiver : BroadcastReceiver() {
     private fun fireWake(c: Context, i: Intent) {
         val title = i.getStringExtra("title") ?: "الإيقاظ"
         val text = i.getStringExtra("text") ?: "الصلاةُ خيرٌ من النوم"
+        // إيقاظ اليوم الجديد يستعيد رصيد المعاودات؛ المعاودة نفسها لا تستعيده وإلا دارت بلا نهاية
+        if (!i.getBooleanExtra("retry", false)) {
+            try { Prefs.resetWakeRetries(c); Prefs.setSnoozeUsed(c, 0) } catch (_: Exception) {}
+        }
         // ابدأ الصوت القوي عبر الخدمة
         val svc = Intent(c, AlarmService::class.java).apply {
             putExtra("mode", "wake")

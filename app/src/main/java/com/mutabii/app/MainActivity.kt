@@ -35,7 +35,47 @@ class MainActivity : android.app.Activity() {
             val a = current?.get() ?: return
             a.runOnUiThread { a.applyImmersive(full) }
         }
+
+        /**
+         * يطلب صلاحية الميكروفون لتسجيل الأذكار.
+         * WebView لا يفتح الميكروفون إطلاقاً قبل منح صلاحية النظام، حتى مع onPermissionRequest.
+         */
+        fun askMic() {
+            val a = current?.get() ?: return
+            a.runOnUiThread {
+                try { a.requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_MIC) }
+                catch (_: Exception) {}
+            }
+        }
+
+        const val REQ_MIC = 103
+        const val REQ_SOUND = 556
+
+        /** يفتح منتقي ملف صوت لتنبيه الأذان أو الإيقاظ. */
+        fun pickSound(target: String) {
+            val a = current?.get() ?: return
+            a.runOnUiThread {
+                a.soundTarget = if (target == "wake") "wake" else "adhan"
+                try {
+                    a.startActivityForResult(
+                        Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "audio/*"
+                            addFlags(
+                                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        }, REQ_SOUND
+                    )
+                } catch (_: Exception) {
+                    try { Toast.makeText(a, "تعذّر فتح منتقي الصوت", Toast.LENGTH_SHORT).show() }
+                    catch (_: Exception) {}
+                }
+            }
+        }
     }
+
+    private var soundTarget = "adhan"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,6 +179,27 @@ class MainActivity : android.app.Activity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQ_SOUND) {
+            if (resultCode == RESULT_OK) {
+                val uri = data?.data
+                if (uri != null) {
+                    try {
+                        contentResolver.takePersistableUriPermission(
+                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    } catch (_: Exception) {}
+                    val key = if (soundTarget == "wake") Prefs.K_WAKE_URI else Prefs.K_ADHAN_URI
+                    try { Prefs.sp(this).edit().putString(key, uri.toString()).apply() }
+                    catch (_: Exception) {}
+                    val nm = if (soundTarget == "wake") "الإيقاظ" else "الأذان"
+                    try { Toast.makeText(this, "✅ ضُبط صوت $nm", Toast.LENGTH_SHORT).show() }
+                    catch (_: Exception) {}
+                }
+            }
+            try { web?.evaluateJavascript("window.__mtbAlarmsChanged&&window.__mtbAlarmsChanged();", null) }
+            catch (_: Exception) {}
+            return
+        }
         if (requestCode == REQ_FILE) {
             val cb = filePathCallback
             filePathCallback = null
@@ -173,6 +234,17 @@ class MainActivity : android.app.Activity() {
                     != PackageManager.PERMISSION_GRANTED
                 ) requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 102)
             } catch (_: Exception) {}
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_MIC) {
+            val ok = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            try { web?.evaluateJavascript("window.__mtbMicResult && window.__mtbMicResult($ok);", null) }
+            catch (_: Exception) {}
         }
     }
 
