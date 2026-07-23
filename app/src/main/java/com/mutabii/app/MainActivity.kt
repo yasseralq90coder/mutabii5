@@ -49,6 +49,7 @@ class MainActivity : android.app.Activity() {
         }
 
         const val REQ_MIC = 103
+        const val REQ_LOC = 104
         const val REQ_SOUND = 556
 
         /** يفتح منتقي ملف صوت لتنبيه الأذان أو الإيقاظ. */
@@ -76,6 +77,8 @@ class MainActivity : android.app.Activity() {
     }
 
     private var soundTarget = "adhan"
+    private var pendingGeo: android.webkit.GeolocationPermissions.Callback? = null
+    private var pendingGeoOrigin: String? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -176,6 +179,37 @@ class MainActivity : android.app.Activity() {
         override fun onPermissionRequest(request: PermissionRequest?) {
             try { request?.grant(request.resources) } catch (_: Exception) {}
         }
+
+        /**
+         * الموقع داخل WebView: لا يكفي إذن الصفحة — لا بد من إذن النظام أولاً.
+         * بدون تجاوز هذه الدالة يرفض WebView الطلب صامتاً فتظهر رسالة «الإذن مرفوض».
+         */
+        override fun onGeolocationPermissionsShowPrompt(
+            origin: String?, callback: android.webkit.GeolocationPermissions.Callback?
+        ) {
+            val granted = try {
+                checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED ||
+                    checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED
+            } catch (_: Exception) { false }
+            if (granted) {
+                try { callback?.invoke(origin, true, false) } catch (_: Exception) {}
+            } else {
+                // اطلب إذن النظام، وارفض هذا الطلب — يعيد المستخدم الضغط بعد المنح
+                pendingGeo = callback; pendingGeoOrigin = origin
+                try {
+                    requestPermissions(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        ), REQ_LOC
+                    )
+                } catch (_: Exception) {
+                    try { callback?.invoke(origin, false, false) } catch (_: Exception) {}
+                }
+            }
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -245,6 +279,17 @@ class MainActivity : android.app.Activity() {
             val ok = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
             try { web?.evaluateJavascript("window.__mtbMicResult && window.__mtbMicResult($ok);", null) }
             catch (_: Exception) {}
+        }
+        if (requestCode == REQ_LOC) {
+            val ok = grantResults.isNotEmpty() &&
+                grantResults.any { it == PackageManager.PERMISSION_GRANTED }
+            try { pendingGeo?.invoke(pendingGeoOrigin, ok, false) } catch (_: Exception) {}
+            pendingGeo = null; pendingGeoOrigin = null
+            try {
+                web?.evaluateJavascript(
+                    "window.__mtbGeoResult && window.__mtbGeoResult($ok);", null
+                )
+            } catch (_: Exception) {}
         }
     }
 

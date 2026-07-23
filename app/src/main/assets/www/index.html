@@ -477,9 +477,20 @@ function useMyLocation(){
   save();applyLoc();toast('✅ حُدِّثت المواقيت حسب موقعك');render();
  };
  const fail=function(err){
+  /* في التطبيق يُطلب إذن النظام تلقائياً، فرسالة المتصفح عن «رمز القفل» لا معنى لها */
+  if(window.MTBNative){
+   const mn={1:'لم يُمنح إذن الموقع — اسمح به ثم أعد الضغط',2:'تعذّر تحديد الإحداثيات — فعّل GPS وجرّب في مكان مكشوف',3:'انتهت مهلة التحديد — أعد المحاولة'}[err&&err.code]||'تعذّر الوصول للموقع';
+   toast('⚠️ '+mn,'err');return;
+  }
   const m={1:'الإذن مرفوض — اضغط رمز القفل 🔒 بجانب العنوان ثم الأذونات ← الموقع ← سماح، وفي Brave تأكد أيضاً من Site settings ← Location',2:'تعذّر تحديد الإحداثيات — فعّل GPS في الجهاز وجرّب في مكان مكشوف',3:'انتهت مهلة التحديد — أعد المحاولة'}[err&&err.code]||'تعذّر الوصول للموقع';
   toast('⚠️ '+m,'err');
   if(location.protocol==='file:')setTimeout(function(){toast('💡 المتصفح يمنع الموقع غالباً للملفات المحلية file:// — الحل: الإدخال اليدوي للمدينة، أو فتح الملف عبر خادم https','warn');},3600);
+ };
+ /* بعد منح إذن النظام يُعاد الطلب تلقائياً بلا ضغط ثانٍ */
+ window.__mtbGeoResult=function(granted){
+  if(!granted){toast('⚠️ لم يُمنح إذن الموقع','err');return;}
+  toast('📍 مُنح الإذن — جارٍ التحديد…','warn');
+  try{navigator.geolocation.getCurrentPosition(ok,fail,{enableHighAccuracy:true,timeout:15000,maximumAge:0});}catch(e){}
  };
  navigator.geolocation.getCurrentPosition(ok,function(err){
   if(err&&(err.code===2||err.code===3)){navigator.geolocation.getCurrentPosition(ok,fail,{enableHighAccuracy:false,timeout:25000,maximumAge:86400000});}
@@ -988,15 +999,27 @@ function alrScreen(){
    +num('wakeSnoozeMax',A.wakeSnoozeMax||0,'مرات الغفوة المسموحة','٠ = ممنوعة تماماً',1,0,5,'')
    +(A.wakeSnoozeMax>0?num('wakeSnoozeMin',A.wakeSnoozeMin||5,'مدة الغفوة','',1,1,15,' د'):''))
   +card('🔁 إن تجاهلته',
-    num('wakeAutoStop',A.wakeAutoStop||15,'يرنّ لمدة','قبل أن يصمت',5,5,60,' د')
-   +num('wakeRetries',(A.wakeRetries===undefined?3:A.wakeRetries),'ثم يعاود','مرات إضافية حتى تقوم',1,0,10,'')
-   +((A.wakeRetries||0)>0?num('wakeRetryMin',A.wakeRetryMin||3,'الفاصل بين المعاودات','',1,1,15,' د'):''))
+    (function(){
+     const v=(A.wakeAutoStop===undefined?15:A.wakeAutoStop);
+     return '<div class="naRow static"><span class="naL"><span class="naT">يرنّ لمدة</span>'
+      +'<span class="naS">'+(v===0?'لا يصمت أبداً حتى تُوقفه — الأقوى':'ثم يصمت')+'</span></span>'
+      +'<span class="naNum">'
+      +'<button data-act="naset" data-k="wakeAutoStop" data-v="'+Math.max(0,v-5)+'">−</button>'
+      +'<b>'+(v===0?'∞':arNum(v)+'<small> د</small>')+'</b>'
+      +'<button data-act="naset" data-k="wakeAutoStop" data-v="'+Math.min(60,v+5)+'">+</button>'
+      +'</span></div>';
+    })()
+   +((A.wakeAutoStop||0)>0?num('wakeRetries',(A.wakeRetries===undefined?3:A.wakeRetries),'ثم يعاود','مرات إضافية حتى تقوم',1,0,10,''):'')
+   +((A.wakeAutoStop||0)>0&&(A.wakeRetries||0)>0?num('wakeRetryMin',A.wakeRetryMin||3,'الفاصل بين المعاودات','',1,1,15,' د'):''))
   +'<div class="naNote">🛡️ أزرار الصوت لا تُسكت الإيقاظ، ولا يوجد زر إيقاف في ستارة الإشعارات — لا سبيل لإيقافه إلا بالتحدّي.</div>';
  }
  else{
-  const okE=!!A.exactOk,okB=!!A.battOk;
+  const okE=!!A.exactOk,okB=!!A.battOk,okF=(A.fsiOk!==false);
   body=card('⚙️ أذونات النظام',
-    '<div class="naPerm'+(okE?' ok':'')+'"><div><div class="naT">'+(okE?'✅':'⚠️')+' المنبّهات الدقيقة</div>'
+    '<div class="naPerm'+(okF?' ok':'')+'"><div><div class="naT">'+(okF?'✅':'🚨')+' شاشة الإيقاظ الكاملة</div>'
+   +'<div class="naS">'+(okF?'مسموحة — تظهر فوق القفل':'بدونها لا تظهر شاشة التحدّي إطلاقاً — يبقى إشعاراً يسهل تجاهله وأنت نائم')+'</div></div>'
+   +(okF?'':'<button data-act="nafsi" class="naBtn go">تفعيل</button>')+'</div>'
+   +'<div class="naPerm'+(okE?' ok':'')+'"><div><div class="naT">'+(okE?'✅':'⚠️')+' المنبّهات الدقيقة</div>'
    +'<div class="naS">'+(okE?'مسموحة — المواعيد تُضبط بدقة':'بدونها قد يتأخر الأذان دقائق')+'</div></div>'
    +(okE?'':'<button data-act="naexact" class="naBtn go">تفعيل</button>')+'</div>'
    +'<div class="naPerm'+(okB?' ok':'')+'"><div><div class="naT">'+(okB?'✅':'⚠️')+' تجاهل تقييد البطارية</div>'
@@ -1611,7 +1634,7 @@ function vManageHTML(card,row){
    +'</div>';
  });
 
- const canRec=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);
+ const canRec=vNativeRec()||!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);
 
  return card('🎙 صوت قراءة الأذكار',
    '<div style="padding:11px 12px;font-size:11.5px;color:var(--mu);line-height:1.85;border-bottom:1px solid rgba(255,255,255,.05)">اختر الصوت الذي تُقرأ به الأذكار عند الضغط على «استمع للأذكار». الأذكار غير المسجَّلة تُقرأ بقارئ الجهاز تلقائياً.</div>'
@@ -3249,12 +3272,44 @@ function vMicOK(){
  try{if(window.MTBNative&&MTBNative.ensureMic)return !!MTBNative.ensureMic();}catch(e){}
  return true;
 }
+/* المسجّل الأصلي — WebView يرفض getUserMedia لصفحات file:// فنسجّل عبر الجسر */
+function vNativeRec(){return !!(window.MTBNative&&MTBNative.recStart&&MTBNative.recStop);}
+function vRecStartNative(vid,cat,id){
+ let r='';
+ try{r=MTBNative.recStart()||'';}catch(e){r='err';}
+ if(r==='perm'){toast('🎤 اسمح للتطبيق باستخدام الميكروفون ثم أعد الضغط','warn');return;}
+ if(r.indexOf('ok')!==0){toast('⚠️ تعذّر بدء التسجيل','err');return;}
+ vRec={vid:vid,cat:cat,id:id,mr:null,native:true,t0:Date.now()};
+ vRecTm=setInterval(function(){
+  if(!vRec)return;
+  const s=Math.floor((Date.now()-vRec.t0)/1000);
+  const el=document.getElementById('vTimer');
+  if(el)el.textContent='⏺ '+arNum(Math.floor(s/60))+':'+arNum(s%60<10?'0'+(s%60):s%60);
+  if(s>=180)vRecStop();
+ },300);
+ vUI();
+}
+function vRecStopNative(){
+ const r=vRec;
+ if(vRecTm){clearInterval(vRecTm);vRecTm=null;}
+ vRec=null;
+ let b64='';
+ try{b64=MTBNative.recStop()||'';}catch(e){}
+ if(!b64){toast('⚠️ لم يُلتقط صوت — تحقق من الميكروفون','err');vUI();return;}
+ let blob=null;
+ try{blob=vFromB64(b64,'audio/mp4');}catch(e){}
+ if(!blob||!blob.size){toast('⚠️ تعذّر حفظ التسجيل','err');vUI();return;}
+ const k=vKey(r.vid,r.cat,r.id);
+ vdbPut(k,blob).then(function(){vHave[k]=true;toast('✅ حُفظ التسجيل');vUI();})
+  .catch(function(){toast('❌ تعذّر حفظ التسجيل','err');vUI();});
+}
 function vRecStart(vid,cat,id){
  if(vRec){vRecStop();return;}
+ ttsCancel();
+ if(vNativeRec()){vRecStartNative(vid,cat,id);return;}
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){
   toast('⚠️ جهازك لا يدعم التسجيل الصوتي','err');return;}
  if(!vMicOK()){toast('🎤 اسمح للتطبيق باستخدام الميكروفون ثم أعد المحاولة','warn');return;}
- ttsCancel();
  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
   const mime=vMime();let mr;
   try{mr=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);}
@@ -3283,6 +3338,7 @@ function vRecStart(vid,cat,id){
  }).catch(function(){toast('🎤 تعذّر فتح الميكروفون — تأكد من السماح بالصلاحية','err');});
 }
 function vRecStop(){
+ if(vRec&&vRec.native){vRecStopNative();return;}
  try{if(vRec&&vRec.mr&&vRec.mr.state!=='inactive'){vRec.mr.stop();return;}}catch(e){}
  if(vRecTm){clearInterval(vRecTm);vRecTm=null;}
  vRec=null;vUI();
@@ -3674,6 +3730,8 @@ function ensureAudio(){
  });
  audioEl.addEventListener('error',function(){
   if(!audioState.surah)return;
+  /* تفريغ المصدر عند الإنهاء يُطلق حدث خطأ زائفاً — تجاهله */
+  if(!audioEl.src||audioEl.src===location.href)return;
   /* انقطاع الشبكة: أعد المحاولة من نفس الثانية بدل إسقاط الجلسة */
   if((audioState._retry||0)<2){
    const no=audioState.surah,t=Math.floor(audioState.time||0),r=(audioState._retry||0)+1;
@@ -3774,7 +3832,20 @@ function playSurah(no,seekTo){
  if(seekTo&&seekTo>0){const h=function(){try{audioEl.currentTime=seekTo;}catch(e){}audioEl.removeEventListener('loadedmetadata',h);};audioEl.addEventListener('loadedmetadata',h);}
  const p=audioEl.play();
  audioState.playing=true;audioState.startTs=Date.now();render();
- if(p&&p.catch)p.catch(e=>{audioState.playing=false;toast('تعذّر التشغيل — تأكد من الإنترنت','err');render();});
+ /* AbortError طبيعي: يحدث كلما استُبدل المصدر (النسخة المحفوظة) أو بدّلت السورة بسرعة.
+    لا تُنذر المستخدم إلا لو توقف الصوت فعلاً بعد لحظة. */
+ if(p&&p.catch)p.catch(function(e){
+  const nm=(e&&e.name)||'';
+  if(nm==='AbortError')return;
+  setTimeout(function(){
+   if(audioState.surah!==no)return;
+   if(audioEl&&!audioEl.paused)return;          /* يعمل فعلاً — لا رسالة */
+   audioState.playing=false;
+   if(nm==='NotAllowedError')toast('اضغط ▶ لبدء التشغيل','warn');
+   else toast('تعذّر التشغيل — تأكد من الإنترنت','err');
+   render();
+  },900);
+ });
 }
 function pauseAudio(){if(audioEl&&audioState.playing){audioEl.pause();accumSecs();audioState.playing=false;persistResume();render();}}
 function resumeAudio(){if(audioEl&&audioState.surah){audioEl.play();audioState.playing=true;audioState.startTs=Date.now();render();}}
@@ -4811,6 +4882,7 @@ document.addEventListener('click',function(e){
   case 'nastop':try{MTBNative.stopTest();toast('⏹ أُوقفت التجربة');}catch(e){}break;
   case 'naexact':try{MTBNative.openExactSettings();}catch(e){}break;
   case 'nabatt':try{MTBNative.openBatterySettings();}catch(e){}break;
+  case 'nafsi':try{MTBNative.openFsiSettings();}catch(e){}break;
 
   /* ── أصوات الأذكار ── */
   case 'vpickopen':vPickModal();break;

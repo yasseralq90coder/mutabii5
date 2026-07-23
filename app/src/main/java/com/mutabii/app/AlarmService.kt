@@ -253,7 +253,8 @@ class AlarmService : Service() {
                 PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
                 "mtb:alarm"
             )
-            wl?.acquire(20 * 60 * 1000L)
+            // مهلة سخيّة: الإيقاظ قد يُضبط على «لا يصمت حتى تُوقفه»
+            wl?.acquire(60 * 60 * 1000L)
         } catch (_: Exception) {}
     }
 

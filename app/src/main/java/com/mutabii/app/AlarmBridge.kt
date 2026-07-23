@@ -103,6 +103,7 @@ class AlarmBridge(private val ctx: Context) {
             o.put("wakeRetryMin", Prefs.wakeRetryMin(ctx))
             o.put("exactOk", exactAlarmsAllowed())
             o.put("battOk", batteryUnrestricted())
+            o.put("fsiOk", fullScreenAllowed())
             o.toString()
         } catch (e: Exception) { "{}" }
     }
@@ -132,7 +133,8 @@ class AlarmBridge(private val ctx: Context) {
                 "wakeTaps" -> e.putInt(Prefs.K_WAKE_TAPS, value.toIntOrNull() ?: 20)
                 "wakeSnoozeMin" -> e.putInt(Prefs.K_WAKE_SNOOZE_MIN, value.toIntOrNull() ?: 5)
                 "wakeSnoozeMax" -> e.putInt(Prefs.K_WAKE_SNOOZE_MAX, value.toIntOrNull() ?: 3)
-                "wakeAutoStop" -> e.putInt(Prefs.K_WAKE_AUTOSTOP, value.toIntOrNull() ?: 15)
+                // ٠ = لا يصمت حتى تُوقفه بالتحدّي
+                "wakeAutoStop" -> e.putInt(Prefs.K_WAKE_AUTOSTOP, (value.toIntOrNull() ?: 15).coerceIn(0, 60))
                 "wakeRetries" -> e.putInt(Prefs.K_WAKE_RETRIES, value.toIntOrNull() ?: 3)
                 "wakeRetryMin" -> e.putInt(Prefs.K_WAKE_RETRY_MIN, value.toIntOrNull() ?: 3)
                 "adhanUri" -> e.putString(Prefs.K_ADHAN_URI, value)
@@ -207,6 +209,30 @@ class AlarmBridge(private val ctx: Context) {
         } catch (_: Exception) { openSettings() }
     }
 
+    /**
+     * إذن الشاشة الكاملة — منذ أندرويد ١٤ لم يعد يُمنح تلقائياً.
+     * بدونه لا تظهر شاشة الإيقاظ فوق القفل، فيبقى مجرد إشعار يسهل تجاهله.
+     */
+    @JavascriptInterface
+    fun openFsiSettings() {
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                ctx.startActivity(
+                    Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+                        .setData(android.net.Uri.parse("package:" + ctx.packageName))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            } else openSettings()
+        } catch (_: Exception) { openSettings() }
+    }
+
+    private fun fullScreenAllowed(): Boolean = try {
+        if (Build.VERSION.SDK_INT >= 34) {
+            (ctx.getSystemService(Context.NOTIFICATION_SERVICE)
+                as android.app.NotificationManager).canUseFullScreenIntent()
+        } else true
+    } catch (_: Exception) { true }
+
     private fun exactAlarmsAllowed(): Boolean = try {
         if (Build.VERSION.SDK_INT >= 31) {
             (ctx.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager)
@@ -231,6 +257,69 @@ class AlarmBridge(private val ctx: Context) {
             if (!granted) MainActivity.askMic()
             granted
         } catch (_: Exception) { false }
+    }
+
+    /* ═══ تسجيل أصلي ═══
+       WebView يرفض getUserMedia لصفحات file:// مهما مُنحت أذونات النظام،
+       فالتسجيل يمرّ من هنا: نسجّل بـMediaRecorder ونسلّم الصوت للصفحة base64. */
+    private var rec: android.media.MediaRecorder? = null
+    private var recFile: File? = null
+
+    @JavascriptInterface
+    fun recSupported(): Boolean = true
+
+    @JavascriptInterface
+    fun recStart(): String {
+        try {
+            if (ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) { MainActivity.askMic(); return "perm" }
+            recCancel()
+            val f = File(ctx.cacheDir, "mtb_rec_" + System.currentTimeMillis() + ".m4a")
+            @Suppress("DEPRECATION")
+            val r = if (Build.VERSION.SDK_INT >= 31)
+                android.media.MediaRecorder(ctx) else android.media.MediaRecorder()
+            r.setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+            r.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+            r.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+            r.setAudioChannels(1)
+            r.setAudioSamplingRate(44100)
+            r.setAudioEncodingBitRate(48000)
+            r.setOutputFile(f.absolutePath)
+            r.prepare()
+            r.start()
+            rec = r; recFile = f
+            return "ok"
+        } catch (e: Exception) {
+            recCancel()
+            return "err:" + (e.message ?: "")
+        }
+    }
+
+    /** يوقف التسجيل ويعيد الصوت base64 — الصفحة تحوّله Blob وتخزّنه كما هو. */
+    @JavascriptInterface
+    fun recStop(): String {
+        val f = recFile
+        try { rec?.stop() } catch (_: Exception) {}
+        try { rec?.release() } catch (_: Exception) {}
+        rec = null; recFile = null
+        return try {
+            if (f == null || !f.exists() || f.length() < 512) { f?.delete(); "" }
+            else {
+                val bytes = f.readBytes()
+                f.delete()
+                android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+            }
+        } catch (_: Exception) { try { f?.delete() } catch (_: Exception) {}; "" }
+    }
+
+    @JavascriptInterface
+    fun recCancel() {
+        try { rec?.stop() } catch (_: Exception) {}
+        try { rec?.release() } catch (_: Exception) {}
+        rec = null
+        try { recFile?.delete() } catch (_: Exception) {}
+        recFile = null
     }
 
     /** ملء الشاشة: يخفي/يُظهر أشرطة النظام (WebView لا يستطيع ذلك بنفسه). */
