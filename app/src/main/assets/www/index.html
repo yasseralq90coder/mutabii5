@@ -785,6 +785,7 @@ function updateClock(){
  const nsE=document.getElementById('nsS');if(nsE)nsE.textContent=ns;
  try{alrTick(nowS);}catch(e){}
  try{arcTick(nowS);}catch(e){}
+ try{nwTick();}catch(e){}
  const lt=document.getElementById('listenTime');if(lt&&audioState.surah){lt.textContent=fmtDur(audioState.secs+(audioState.playing&&audioState.startTs?Math.round((Date.now()-audioState.startTs)/1000):0));}
 }
 
@@ -1423,6 +1424,99 @@ function virtuousTime(){
  if(now.getDay()===5){const asr=t2(times.asr);if(nowS>=asr&&nowS<maghrib)return{e:'🤲',t:'آخر ساعة من الجمعة — ساعة إجابة، ألِحّ في الدعاء'};}
  return null;
 }
+/* ═══════════════ نوافذ الفضل — بطاقة «الآن» ═══════════════ */
+/* الصفحة الرئيسية تُجيب سؤالاً واحداً: ما العمل الآن؟
+   كل نافذة هنا فرصة شرعية لها وقت إغلاق حقيقي، والعدّاد يجعل فواتها محسوساً —
+   وهذا أدعى للعمل من تأنيب على ما مضى. النافذة الأولى المطابقة تفوز، فالترتيب أدناه
+   هو ترتيب الأولوية: الأقصر وقتاً والأشد فوتاً أولاً. */
+function nowWindow(){
+ if(!times||!times.fajr)return null;
+ const now=new Date(),nowS=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+ const F=t2s(times.fajr),SR=times.sunrise?t2s(times.sunrise):F+5400;
+ const D=t2s(times.dhuhr),A=t2s(times.asr),M=t2s(times.maghrib),I=t2s(times.isha);
+ if(F>=99999||D>=99999||M>=99999)return null;
+ const rec=getRec(TODAY),ad=rec.adhkarDone||{},sn=rec.sunnah||{},pray=rec.p||[];
+ const dow=now.getDay(),W=[];
+ /* يدعم النوافذ التي تعبر منتصف الليل (الثلث الأخير، الوتر) */
+ const add=function(o){
+  const inw=o.from<=o.to?(nowS>=o.from&&nowS<o.to):(nowS>=o.from||nowS<o.to);
+  if(inw)W.push(o);
+ };
+ /* ١ — بين الأذان والإقامة: أقصر النوافذ وأعلاها إلحاحاً */
+ const iqO=data.iqama||IQAMA_DEF;
+ for(let i=PK.length-1;i>=0;i--){
+  const ps=t2s(times[PK[i]]);
+  if(ps<=nowS){
+   const iqS=ps+((iqO[PK[i]]||0)*60);
+   if(nowS<iqS&&!pray[i])add({id:'iqama',from:ps,to:iqS,ic:'🕌',nm:'بين الأذان والإقامة — '+PN[i],
+    fd:'الدعاء لا يُرد بين الأذان والإقامة، فاسأل الله حاجتك',
+    act:'data-act="goadhkar" data-cat="p" data-pk="'+PK[i]+'"',btn:'افتح أذكار الصلاة',tone:'go'});
+   break;
+  }
+ }
+ /* ٢ — الثلث الأخير */
+ const night=(F+86400)-M,lt=(M+night*2/3)%86400;
+ add({id:'thuluth',from:lt,to:F,ic:'🌙',nm:'الثلث الأخير من الليل',
+  fd:'ينزل ربنا إلى السماء الدنيا فيقول: من يدعوني فأستجيب له — فأكثِر من الدعاء والاستغفار',
+  act:'data-act="godhikr"',btn:'افتح الذكر والدعاء',tone:'tl'});
+ /* ٣ — الإشراق */
+ add({id:'ishraq',from:F,to:SR,ic:'🌅',nm:'وقت الإشراق',
+  fd:'من صلى الفجر ثم قعد يذكر الله حتى تطلع الشمس ثم صلى ركعتين — كُتبت له كأجر حجة وعمرة تامة',
+  act:'data-act="goadhkar" data-cat="sabah"',btn:'ابدأ أذكار الصباح',tone:'go'});
+ /* ٤ — ساعة الإجابة يوم الجمعة */
+ if(dow===5)add({id:'saah',from:A,to:M,ic:'🤲',nm:'آخر ساعة من الجمعة',
+  fd:'ساعة لا يوافقها عبد مسلم يسأل الله شيئاً إلا أعطاه إياه — ألِحّ في الدعاء',
+  act:'data-act="godhikr"',btn:'افتح الدعاء',tone:'tl'});
+ /* ٥ — الكهف يوم الجمعة */
+ if(dow===5&&!rec.kahf)add({id:'kahf',from:F,to:M,ic:'🌟',nm:'سورة الكهف',
+  fd:'من قرأ سورة الكهف يوم الجمعة أضاء له من النور ما بين الجمعتين',
+  act:'data-act="openkahf"',btn:'اقرأ سورة الكهف',tone:'go'});
+ /* ٦ — أذكار الصباح والمساء ما لم تكتمل */
+ const sD=ADK_SABAH.filter(function(it){return ad['sabah-'+it.id];}).length;
+ const mD=ADK_MASA.filter(function(it){return ad['masa-'+it.id];}).length;
+ if(sD<ADK_SABAH.length)add({id:'sabah',from:SR,to:D,ic:'📿',nm:'أذكار الصباح',
+  fd:'حصنك اليوم — بقي '+arNum(ADK_SABAH.length-sD)+' من '+arNum(ADK_SABAH.length),
+  act:'data-act="goadhkar" data-cat="sabah"',btn:'أكمل أذكار الصباح',tone:'go'});
+ if(mD<ADK_MASA.length)add({id:'masa',from:A,to:I,ic:'📿',nm:'أذكار المساء',
+  fd:'حصنك الليلة — بقي '+arNum(ADK_MASA.length-mD)+' من '+arNum(ADK_MASA.length),
+  act:'data-act="goadhkar" data-cat="masa"',btn:'أكمل أذكار المساء',tone:'go'});
+ /* ٧ — الضحى */
+ add({id:'duha',from:SR+1200,to:Math.max(SR+1201,D-600),ic:'☀️',nm:'وقت الضحى',
+  fd:'يصبح على كل سلامى من أحدكم صدقة — ويجزئ من ذلك ركعتان يركعهما من الضحى',
+  act:'data-act="godhikr"',btn:'سبّح واذكر الله',tone:'tl'});
+ /* ٨ — الوتر ما لم يُسجَّل */
+ if(!sn.wt)add({id:'witr',from:I,to:F,ic:'🌙',nm:'الوتر',
+  fd:'أوتروا يا أهل القرآن — اجعل آخر صلاتك من الليل وتراً',
+  act:'data-act="togsun" data-key="wt"',btn:'سجّل الوتر',tone:'tl'});
+ return W.length?W[0]:null;
+}
+function nowCard(){
+ ui._nwEndMs=0;
+ let w=null;try{w=nowWindow();}catch(e){return '';}
+ if(!w)return '';
+ const now=new Date(),nowS=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+ let left=w.to-nowS;if(left<0)left+=86400;
+ ui._nwEndMs=Date.now()+left*1000;
+ const c=w.tone==='tl'?'var(--tl)':'var(--go)';
+ const bg=w.tone==='tl'?'rgba(90,154,146,.08)':'rgba(201,164,76,.08)';
+ return '<div class="cb" id="nwCard" style="margin:12px 13px 0;border:2px solid '+c+';background:'+bg+'">'
+ +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px">'
+ +'<span style="font-size:11px;font-weight:900;color:'+c+';border:1px solid '+c+';border-radius:20px;padding:3px 10px;white-space:nowrap">نافذة مفتوحة</span>'
+ +'<span style="font-size:12px;font-weight:800;color:'+c+';white-space:nowrap">تُغلق بعد <b id="nwCd">'+s2hms(left)+'</b></span>'
+ +'</div>'
+ +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px"><span style="font-size:24px">'+w.ic+'</span><div style="font-size:17px;font-weight:900;color:var(--tx);line-height:1.5">'+w.nm+'</div></div>'
+ +'<div style="font-size:13px;line-height:1.95;color:var(--mu);margin-bottom:12px">'+w.fd+'</div>'
+ +'<button '+w.act+' style="width:100%;padding:13px;border-radius:12px;background:'+c+';color:#1a1410;font-size:15px;font-weight:900">'+w.btn+'</button>'
+ +'</div>';
+}
+/* العدّاد الحيّ — يُستدعى كل ثانية من updateClock، ويعيد الرسم مرة واحدة عند الإغلاق */
+function nwTick(){
+ const e=document.getElementById('nwCd');
+ if(!e||!ui._nwEndMs)return;
+ const d=Math.round((ui._nwEndMs-Date.now())/1000);
+ if(d<=0){ui._nwEndMs=0;render();return;}
+ e.textContent=s2hms(d);
+}
 function recoveryMsg(){
  const st=streakCount();if(st>0)return null;
  /* آخر يوم فيه نشاط */
@@ -1993,7 +2087,7 @@ ui._kun='';
  })();
  /* ★ الترتيب: الورد ← الصلوات وأذكار بعدها ← السنن ← البقية */
  const nudgeBanner=homeNudgeBanner();
- return bkNote+nudgeBanner
+ return nowCard()+bkNote+nudgeBanner
  +'<div class="hero2">'+heroNow(rec)+'</div>'
  +duo
  +missNote
