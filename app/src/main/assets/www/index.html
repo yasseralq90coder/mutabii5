@@ -4218,7 +4218,7 @@ function renderHifzWorkshop(){
   body='<div class="qbody" style="display:block;padding:16px 14px 96px;overflow-y:auto">'
    +'<div style="text-align:center;font-size:11px;color:var(--mu);margin-bottom:12px">الآية '+arNum(hw.ay+1)+' من '+arNum(total)+' — كرّرها حتى ترسخ</div>'
    +loadingNote
-   +'<div style="'+ff+'font-size:'+(hw.md?'34px':'23px')+';line-height:2.2;color:var(--tx);text-align:center;background:rgba(42,33,22,.5);border:1px solid var(--gbr);border-radius:14px;padding:20px 14px;margin-bottom:16px">'+hwAyahInner(p,ay)+'</div>'
+   +'<div style="'+ff+'font-size:'+(hw.md?'30px':'23px')+';line-height:2.3;color:var(--tx);text-align:center;'+(hw.md?'word-break:break-all;overflow-wrap:anywhere;':'')+'background:rgba(42,33,22,.5);border:1px solid var(--gbr);border-radius:14px;padding:20px 14px;margin-bottom:16px">'+hwAyahInner(p,ay)+'</div>'
    +'<div style="text-align:center;font-size:16px;font-weight:900;color:var(--go)">كرّرت '+arNum(hw.rep)+' / '+arNum(cfg.reps)+'</div>'
    +'<div style="height:8px;background:rgba(201,164,76,.12);border-radius:5px;overflow:hidden;margin:10px auto 0;max-width:280px"><div style="height:100%;width:'+Math.min(100,Math.round(hw.rep/cfg.reps*100))+'%;background:var(--go);border-radius:5px"></div></div>'
    +'</div>';
@@ -4231,7 +4231,7 @@ function renderHifzWorkshop(){
   body='<div class="qbody" style="display:block;padding:16px 14px 96px;overflow-y:auto">'
    +'<div style="text-align:center;font-size:12px;color:var(--tl);font-weight:800;margin-bottom:12px">🔗 اسرد متّصلة: الآيات ١ ← '+arNum(hw.ay+1)+'</div>'
    +loadingNote
-   +'<div style="'+ff+'font-size:'+(hw.md?'28px':'21px')+';line-height:2.3;color:var(--tx);text-align:center;background:rgba(90,154,146,.06);border:1px solid var(--tl);border-radius:14px;padding:18px 14px">'+joined+'</div>'
+   +'<div style="'+ff+'font-size:'+(hw.md?'26px':'21px')+';line-height:2.4;color:var(--tx);text-align:center;'+(hw.md?'word-break:break-all;overflow-wrap:anywhere;':'')+'background:rgba(90,154,146,.06);border:1px solid var(--tl);border-radius:14px;padding:18px 14px">'+joined+'</div>'
    +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-top:12px">الربط بين الآيات هو سرّ إتقان الصفحة — اسردها كلها موصولة قبل الانتقال</div>'
    +'</div>';
   foot='<button data-act="hwconnectdone" style="flex:1;padding:13px;border-radius:12px;background:linear-gradient(135deg,var(--tl),#3f7a72);border:none;color:#fff;font-size:15px;font-weight:900">'+(hw.ay+1<total?'سردتها ✓ — الآية التالية':'سردتها ✓ — لبوابة الإتقان')+'</button>';
