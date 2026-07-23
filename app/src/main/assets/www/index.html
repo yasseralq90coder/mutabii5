@@ -1352,6 +1352,10 @@ function ensureDefaults(){
  if(!data.intentions)data.intentions={};
  if(data.audioResume===undefined)data.audioResume=null;
  if(!data.hifz)data.hifz={pages:{}};
+ if(!data.hifzCfg||typeof data.hifzCfg!=='object')data.hifzCfg={reps:5,gate:3,dailyNew:1};
+ if(!(+data.hifzCfg.reps))data.hifzCfg.reps=5;
+ if(!(+data.hifzCfg.gate))data.hifzCfg.gate=3;
+ if(!(+data.hifzCfg.dailyNew))data.hifzCfg.dailyNew=1;
  if(!data.audioPos)data.audioPos={};
  if(!data.reciterReads)data.reciterReads={};
  if(!data.books)data.books={};
@@ -2728,6 +2732,23 @@ function openTasmee(page){
  }
  return openTasmeeLegacy(page);
 }
+/* تذييل التسميع — يتحوّل إلى «بوابة الإتقان» حين يأتي من ورشة الحفظ */
+function tsmFooter(){
+ if(tsm&&tsm.hwGate){
+  const need=data.hifzCfg.gate,s=tsm.hwStreak||0;
+  let dots='';for(let i=0;i<need;i++)dots+='<span style="font-size:15px;color:'+(i<s?'#8fbf83':'var(--mu)')+'">'+(i<s?'●':'○')+'</span>';
+  return '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--c2);border-top:1px solid var(--gbr);padding:8px 12px calc(9px + env(safe-area-inset-bottom));z-index:80">'
+   +'<div style="text-align:center;font-size:11px;color:var(--go);font-weight:800;margin-bottom:7px">🔒 بوابة الإتقان — '+dots+' ('+arNum(s)+'/'+arNum(need)+')</div>'
+   +'<div style="display:flex;gap:8px">'
+   +'<button data-act="tsmbad" style="flex:1;padding:11px;border-radius:12px;background:rgba(194,91,78,.12);border:1px solid var(--rd);color:var(--rd);font-size:13px;font-weight:800">🔁 تعثّرت — صفّر</button>'
+   +'<button data-act="tsmok" style="flex:1.4;padding:11px;border-radius:12px;background:linear-gradient(135deg,var(--g),var(--g2));border:none;color:#fff;font-size:13px;font-weight:900">✅ سردتها بلا تعثّر</button>'
+   +'</div></div>';
+ }
+ return '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--c2);border-top:1px solid var(--gbr);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:80">'
+  +'<button data-act="tsmbad" style="flex:1;padding:12px;border-radius:12px;background:rgba(194,91,78,.12);border:1px solid var(--rd);color:var(--rd);font-size:14px;font-weight:800">🔁 أخطأت — أعدها غداً</button>'
+  +'<button data-act="tsmok" style="flex:1.4;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--g),var(--g2));border:none;color:#fff;font-size:14px;font-weight:900">✅ أتقنتها — مراجعة ناجحة</button>'
+  +'</div>';
+}
 function renderTasmeeMadina(){
  const p=tsm.page,total=tsm.hid.size,shown=tsm.sh.size;
  const body=tsm.mlines.map(function(L){
@@ -2746,10 +2767,7 @@ function renderTasmeeMadina(){
  +'<button data-act="tsmshuffle" style="font-size:13px;padding:6px 10px;border:1px solid var(--br);border-radius:9px;color:var(--tl)">🎲</button></div>'
  +'<div class="qbody" style="display:block;padding:12px 10px 96px;overflow-y:auto"><div class="qpage mpage" data-mp="'+p+'" style="background:transparent;box-shadow:none;border:none">'+body+'</div>'
  +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-top:10px">اقرأ غيباً والمس أي كلمة مطموسة لكشفها — رؤوس الآي ظاهرة لإرشادك</div></div>'
- +'<div style="position:fixed;bottom:0;left:0;right:0;background:var(--c2);border-top:1px solid var(--gbr);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:80">'
- +'<button data-act="tsmbad" style="flex:1;padding:12px;border-radius:12px;background:rgba(194,91,78,.12);border:1px solid var(--rd);color:var(--rd);font-size:14px;font-weight:800">🔁 أخطأت — أعدها غداً</button>'
- +'<button data-act="tsmok" style="flex:1.4;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--g),var(--g2));border:none;color:#fff;font-size:14px;font-weight:900">✅ أتقنتها — مراجعة ناجحة</button>'
- +'</div></div>';
+ +tsmFooter()+'</div>';
 }
 function openTasmeeLegacy(page){
  const lines=(QL[page-1]||[]).filter(L=>L[0]==='T').map(L=>L.slice(1).split(/\s+/).filter(Boolean));
@@ -4110,14 +4128,181 @@ function renderListen(){
  +(log?'<div class="cb"><div style="font-size:12px;color:var(--go);font-weight:700;margin-bottom:10px">📜 سجل الاستماع</div><div style="max-height:300px;overflow-y:auto">'+log+'</div></div>':'<div class="cb" style="text-align:center;color:var(--mu);font-size:12px;padding:18px">لا يوجد سجل استماع بعد</div>');
 }
 
+/* ═══════════════ نظام الحفظ — لوحة الجزء + ورشة حفظ الصفحة ═══════════════
+   خانة مستقلة في قسم القرآن. تختار جزءاً ثم صفحة، فتفتح ورشتها:
+   تلقين آية آية ← ربط تراكمي ← سرد من الغيب بالطمس ← بوابة إتقان.
+   لا تُختم الصفحة «متقنة» حتى تسردها غيباً N مرات متتالية بلا تعثّر. */
+const JUZP=[1,22,42,62,82,102,121,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
+function juzOfPage(p){let j=1;for(let i=0;i<30;i++){if(p>=JUZP[i])j=i+1;}return j;}
+function juzPages(j){const s=JUZP[j-1];const e=(j<30)?JUZP[j]-1:604;return[s,e];}
+function hifzStatus(p){const e=hifzPages()[String(p)];if(!e)return 'none';return e.st==='mastered'?'mastered':'learning';}
+function hifzMasteredCount(){const pg=hifzPages();return Object.keys(pg).filter(function(k){return pg[k].st==='mastered';}).length;}
+function hifzLearningCount(){const pg=hifzPages();return Object.keys(pg).filter(function(k){return pg[k].st!=='mastered';}).length;}
+/* ترتيب آيات الصفحة — من بيانات المدينة إن نُزّلت، وإلا من نص QL العادي */
+function hwAyat(page){
+ const out=[];
+ if(data.madinaDl&&typeof MD!=='undefined'&&MD[page-1]){
+  const ix=mdIndex(page);let cur=null;
+  ix.flat.forEach(function(f){const key=f.s+':'+f.a;if(!cur||cur.key!==key){cur={key:key,s:f.s,a:f.a,g:'',md:true};out.push(cur);}cur.g+=f.g;});
+  return out;
+ }
+ buildA2P();const pr=P2R[page];if(!pr)return out;
+ Object.keys(pr).map(Number).sort(function(a,b){return a-b;}).forEach(function(s){
+  const r=pr[s],ays=surahAyahs(s);
+  for(let a=r[0];a<=r[1];a++){if(ays[a-1])out.push({key:s+':'+a,s:s,a:a,text:ays[a-1].t,md:false});}
+ });
+ return out;
+}
+function hwAyahInner(page,ay){
+ if(ay.md)return '<span style="font-family:QCFP'+page+',serif">'+ay.g+'</span>';
+ return ay.text+' <span style="color:var(--go)">۝'+arNum(ay.a)+'</span>';
+}
+function hifzMasterPage(p){
+ const P=hifzPages(),k=String(p);
+ const e=P[k]||{r:0};
+ e.st='mastered';e.l=0;e.r=(e.r||0);e.last=TODAY;e.due=addDays(TODAY,HIVL[0]);delete e.wk;
+ P[k]=e;
+ const rec=getRec(TODAY);data.records[TODAY]={...rec,hN:(+rec.hN||0)+1};
+ save();
+}
+
+/* ── الورشة (شاشة كاملة) ── */
+let hw=null;
+function openHifzWorkshop(page){
+ const ay=hwAyat(page);
+ if(!ay.length){toast('تعذّر تحضير آيات الصفحة — نزّل مصحف المدينة من «تنزيل المصاحف»','warn');return;}
+ const cfg=data.hifzCfg,newToday=+(getRec(TODAY).hN||0);
+ if(hifzStatus(page)==='none'&&newToday>=cfg.dailyNew){
+  toast('بلغت حدّ الجديد اليوم ('+arNum(cfg.dailyNew)+') — راجِع المستحقّ أولاً، أو ارفع الحدّ من الإعدادات','warn');
+ }
+ const pg=hifzPages()[String(page)]||{};const saved=pg.wk||null;
+ hw={page:page,ayat:ay,md:!!ay[0].md,ph:(saved&&saved.ph)||'learn',ay:(saved&&saved.ay)||0,rep:0,streak:(saved&&saved.streak)||0};
+ const P=hifzPages(),k=String(page);
+ if(!P[k])P[k]={l:0,r:0,due:'',last:TODAY,st:'learning'};
+ else if(P[k].st!=='mastered')P[k].st='learning';
+ save();modalHTML='';render();window.scrollTo(0,0);
+}
+function hwSaveProgress(){if(!hw)return;const P=hifzPages(),k=String(hw.page);if(P[k])P[k].wk={ph:hw.ph,ay:hw.ay,streak:hw.streak};save();}
+function hwClose(){if(hw){hwSaveProgress();toast('💾 حُفظ تقدّمك — تابع متى شئت');}hw=null;render();}
+/* خط صفحة المدينة يُحمَّل عند الطلب — بدونه تظهر الرموز كخط بديل مشوّه */
+function hwEnsureFont(){
+ if(!hw||!hw.md||hw._fontReady)return;
+ Promise.all([loadQF('b'),loadQF(hw.page)]).then(function(r){
+  if(r[0]&&r[1]&&hw){hw._fontReady=true;render();}
+ });
+}
+function hwStartRecall(){
+ hw.ph='recall';hwSaveProgress();
+ openTasmee(hw.page);
+ if(tsm){tsm.hwGate=true;tsm.hwPage=hw.page;tsm.hwStreak=hw.streak;}
+ render();
+}
+function renderHifzWorkshop(){
+ const p=hw.page,cfg=data.hifzCfg,total=hw.ayat.length;
+ const sname=SS[(hw.ayat[hw.ay]||hw.ayat[0]).s-1];
+ const steps=[['learn','التلقين'],['connect','الربط'],['recall','الإتقان']];
+ const curStep=hw.ph==='connect'?'connect':(hw.ph==='recall'?'recall':'learn');
+ const bar=steps.map(function(s){const on=s[0]===curStep;return '<div style="flex:1;text-align:center;font-size:11px;font-weight:800;padding:6px 2px;border-radius:8px;background:'+(on?'rgba(201,164,76,.15)':'rgba(42,33,22,.5)')+';color:'+(on?'var(--go)':'var(--mu)')+'">'+s[1]+'</div>';}).join('');
+ const head='<div style="display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:var(--c2);border-bottom:1px solid var(--gbr)">'
+  +'<button data-act="hwclose" style="font-size:13px;font-weight:800;color:var(--mu);padding:6px 10px;border:1px solid var(--br);border-radius:9px">✕ حفظ وخروج</button>'
+  +'<div style="text-align:center"><div style="font-size:13px;font-weight:900;color:var(--go)">🧠 حفظ صفحة '+arNum(p)+'</div><div style="font-size:10px;color:var(--mu)">'+(sname?escH(sname[1]):'')+' · جزء '+arNum(juzOfPage(p))+'</div></div>'
+  +'<div style="width:70px"></div></div>'
+  +'<div style="display:flex;gap:6px;padding:10px 12px 0">'+bar+'</div>';
+ let body='',foot='';
+ const ff=hw.md?('font-family:QCFP'+p+',serif;'):'font-family:QHafs,serif;';
+ const fontReady=hw._fontReady;
+ const loadingNote=(hw.md&&!fontReady)?'<div style="text-align:center;font-size:11px;color:var(--mu);margin-bottom:8px">⏳ جارٍ تحميل خط الصفحة…</div>':'';
+
+ if(hw.ph==='learn'){
+  const ay=hw.ayat[hw.ay];
+  body='<div class="qbody" style="display:block;padding:16px 14px 96px;overflow-y:auto">'
+   +'<div style="text-align:center;font-size:11px;color:var(--mu);margin-bottom:12px">الآية '+arNum(hw.ay+1)+' من '+arNum(total)+' — كرّرها حتى ترسخ</div>'
+   +loadingNote
+   +'<div style="'+ff+'font-size:'+(hw.md?'34px':'23px')+';line-height:2.2;color:var(--tx);text-align:center;background:rgba(42,33,22,.5);border:1px solid var(--gbr);border-radius:14px;padding:20px 14px;margin-bottom:16px">'+hwAyahInner(p,ay)+'</div>'
+   +'<div style="text-align:center;font-size:16px;font-weight:900;color:var(--go)">كرّرت '+arNum(hw.rep)+' / '+arNum(cfg.reps)+'</div>'
+   +'<div style="height:8px;background:rgba(201,164,76,.12);border-radius:5px;overflow:hidden;margin:10px auto 0;max-width:280px"><div style="height:100%;width:'+Math.min(100,Math.round(hw.rep/cfg.reps*100))+'%;background:var(--go);border-radius:5px"></div></div>'
+   +'</div>';
+  const ready=hw.rep>=cfg.reps;
+  foot='<button data-act="hwrep" style="flex:1.4;padding:13px;border-radius:12px;background:linear-gradient(135deg,var(--g),var(--g2));border:none;color:#fff;font-size:15px;font-weight:900">'+(ready?'✓ كرّرتها':'+ كرّرتها')+'</button>'
+   +(ready?'<button data-act="hwlearndone" style="flex:1;padding:13px;border-radius:12px;background:rgba(201,164,76,.14);border:1px solid var(--gbr);color:var(--go);font-size:14px;font-weight:800">'+(hw.ay+1<total?'الربط ←':'للإتقان ←')+'</button>':'');
+ }
+ else if(hw.ph==='connect'){
+  const joined=hw.ayat.slice(0,hw.ay+1).map(function(a){return hwAyahInner(p,a);}).join(hw.md?'':' ');
+  body='<div class="qbody" style="display:block;padding:16px 14px 96px;overflow-y:auto">'
+   +'<div style="text-align:center;font-size:12px;color:var(--tl);font-weight:800;margin-bottom:12px">🔗 اسرد متّصلة: الآيات ١ ← '+arNum(hw.ay+1)+'</div>'
+   +loadingNote
+   +'<div style="'+ff+'font-size:'+(hw.md?'28px':'21px')+';line-height:2.3;color:var(--tx);text-align:center;background:rgba(90,154,146,.06);border:1px solid var(--tl);border-radius:14px;padding:18px 14px">'+joined+'</div>'
+   +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-top:12px">الربط بين الآيات هو سرّ إتقان الصفحة — اسردها كلها موصولة قبل الانتقال</div>'
+   +'</div>';
+  foot='<button data-act="hwconnectdone" style="flex:1;padding:13px;border-radius:12px;background:linear-gradient(135deg,var(--tl),#3f7a72);border:none;color:#fff;font-size:15px;font-weight:900">'+(hw.ay+1<total?'سردتها ✓ — الآية التالية':'سردتها ✓ — لبوابة الإتقان')+'</button>';
+ }
+ else{ /* recall — بعد إغلاق التسميع نعرض شاشة الاستئناف */
+  const need=cfg.gate;let dots='';for(let i=0;i<need;i++)dots+='<span style="font-size:26px;color:'+(i<hw.streak?'var(--g)':'var(--mu)')+'">'+(i<hw.streak?'●':'○')+'</span>';
+  body='<div class="qbody" style="display:block;padding:24px 16px 96px;overflow-y:auto;text-align:center">'
+   +'<div style="font-size:34px">🔒</div>'
+   +'<div style="font-size:16px;font-weight:900;color:var(--go);margin:8px 0">بوابة الإتقان</div>'
+   +'<div style="font-size:13px;color:var(--mu);line-height:1.8;margin-bottom:18px">اسرد كامل الصفحة غيباً '+arNum(need)+' مرات متتالية بلا تعثّر — بالطمس. أي تعثّر يصفّر العدّاد.</div>'
+   +'<div style="display:flex;gap:12px;justify-content:center;margin-bottom:8px">'+dots+'</div>'
+   +'<div style="font-size:12px;color:var(--mu)">'+arNum(hw.streak)+' من '+arNum(need)+' سردات ناجحة</div>'
+   +'</div>';
+  foot='<button data-act="hwresume" style="flex:1;padding:13px;border-radius:12px;background:linear-gradient(135deg,#d4b35e,#a67c2e);border:none;color:#1a1410;font-size:15px;font-weight:900">▶ '+(hw.streak?'تابع السرد':'ابدأ السرد بالطمس')+'</button>';
+ }
+ return '<div class="qwrap qread" style="background:#141008">'+head+body
+  +'<div style="position:fixed;bottom:0;left:0;right:0;background:var(--c2);border-top:1px solid var(--gbr);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:80">'+foot+'</div></div>';
+}
+
+/* ── خانة الحفظ ── */
+function renderHifz(){
+ const cfg=data.hifzCfg,jz=ui.hifzJuz||30,pr=juzPages(jz);
+ const hDue=hifzDue(),mastered=hifzMasteredCount(),learning=hifzLearningCount();
+ const rRec=getRec(TODAY);
+ /* شريط الأجزاء */
+ let juzBar='<div class="sr" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px">';
+ for(let j=30;j>=1;j--){const on=jz===j;juzBar+='<button data-act="hifzjuz" data-j="'+j+'" style="flex:0 0 auto;padding:8px 13px;border-radius:18px;font-size:12px;font-weight:800;border:1px solid '+(on?'var(--gbr)':'var(--br)')+';background:'+(on?'rgba(201,164,76,.14)':'rgba(42,33,22,.4)')+';color:'+(on?'var(--go)':'var(--mu)')+'">'+(j===30?'عمّ':'جزء '+arNum(j))+'</button>';}
+ juzBar+='</div>';
+ /* شبكة صفحات الجزء */
+ let grid='';
+ for(let p=pr[0];p<=pr[1];p++){
+  const s=hifzStatus(p);
+  const bg=s==='mastered'?'rgba(107,147,98,.9)':s==='learning'?'rgba(201,164,76,.85)':'rgba(42,33,22,.55)';
+  const col=s==='none'?'var(--mu)':'#141008';const bd=s==='none'?'var(--br)':'transparent';
+  grid+='<button data-act="hifzpage" data-p="'+p+'" style="aspect-ratio:1;border-radius:10px;border:1px solid '+bd+';background:'+bg+';color:'+col+';font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center">'+arNum(p)+'</button>';
+ }
+ const legend='<div style="display:flex;gap:12px;justify-content:center;font-size:11px;color:var(--mu);margin-top:9px"><span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:rgba(107,147,98,.9);vertical-align:-1px"></span> متقنة</span><span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:rgba(201,164,76,.85);vertical-align:-1px"></span> تحت الحفظ</span><span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:rgba(42,33,22,.55);border:1px solid var(--br);vertical-align:-1px"></span> لم تبدأ</span></div>';
+ const cfgSeg=function(k,opts){return opts.map(function(v){const on=+cfg[k]===v;return '<button data-act="hifzcfg" data-k="'+k+'" data-v="'+v+'" style="flex:1;padding:8px 4px;border-radius:10px;font-size:13px;font-weight:800;border:1px solid '+(on?'var(--gbr)':'var(--br)')+';background:'+(on?'rgba(201,164,76,.14)':'rgba(42,33,22,.5)')+';color:'+(on?'var(--go)':'var(--mu)')+'">'+arNum(v)+'</button>';}).join('');};
+
+ return '<div class="stit"><span class="si">🧠</span>حفظ القرآن — بالصفحة والإتقان</div>'
+ +(hDue.length?'<button data-act="hifzduego" class="bg" style="width:100%;padding:13px;font-size:15px;margin-bottom:10px">🔁 مراجعة اليوم — '+arNum(hDue.length)+' صفحة مستحقة (ابدأ بـ'+arNum(hDue[0])+')</button>':(mastered?'<div class="notice" style="margin-bottom:10px">✅ لا مراجعات مستحقة اليوم — أحسنت</div>':''))
+ +'<div style="display:flex;gap:8px;margin-bottom:14px">'
+ +'<div style="flex:1;background:rgba(107,147,98,.1);border:1px solid rgba(107,147,98,.35);border-radius:11px;padding:9px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--g)">'+arNum(mastered)+'</div><div style="font-size:11px;color:var(--mu)">صفحة متقنة</div></div>'
+ +'<div style="flex:1;background:rgba(201,164,76,.08);border:1px solid var(--gbr);border-radius:11px;padding:9px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--go)">'+arNum(learning)+'</div><div style="font-size:11px;color:var(--mu)">تحت الحفظ</div></div>'
+ +'<div style="flex:1;background:rgba(90,154,146,.1);border:1px solid rgba(90,154,146,.35);border-radius:11px;padding:9px;text-align:center"><div style="font-size:20px;font-weight:900;color:var(--tl)">'+arNum(+rRec.hN||0)+'</div><div style="font-size:11px;color:var(--mu)">جديد اليوم</div></div>'
+ +'</div>'
+ +'<div class="cb">'
+ +'<div style="font-size:13px;font-weight:900;color:var(--go);margin-bottom:4px">اختر الجزء ثم الصفحة</div>'
+ +'<div style="font-size:11px;color:var(--mu);margin-bottom:10px">اضغط أي صفحة لتفتح ورشة حفظها. المتقنة تفتح للمراجعة.</div>'
+ +juzBar
+ +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">'+grid+'</div>'
+ +legend
+ +'</div>'
+ +'<details class="arcDet" id="hifzCfgDet"><summary>⚙️ إعدادات الحفظ</summary>'
+ +'<div style="padding:8px 2px"><div style="font-size:12px;font-weight:800;color:var(--mu);margin-bottom:6px">تكرار كل آية في التلقين</div><div style="display:flex;gap:6px;margin-bottom:12px">'+cfgSeg('reps',[3,5,10,20])+'</div>'
+ +'<div style="font-size:12px;font-weight:800;color:var(--mu);margin-bottom:6px">سردات الإتقان المتتالية</div><div style="display:flex;gap:6px;margin-bottom:12px">'+cfgSeg('gate',[3,5,7])+'</div>'
+ +'<div style="font-size:12px;font-weight:800;color:var(--mu);margin-bottom:6px">حدّ الصفحات الجديدة يومياً</div><div style="display:flex;gap:6px">'+cfgSeg('dailyNew',[1,2,3,5])+'</div>'
+ +'</div></details>'
+ +'<div style="display:flex;gap:8px;margin-top:12px"><button data-act="hifztest" class="btl" style="flex:1;padding:11px;font-size:13px">🎯 اختبرني غيباً</button><button data-act="openhifzreader" class="btl" style="flex:1;padding:11px;font-size:13px;border-color:var(--gbr);color:var(--go)">📖 مصحف الحفظ</button></div>'
+ +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-top:10px;line-height:1.7">«اقرأ وارتقِ ورتّل كما كنت ترتّل في الدنيا» — المداومة والإتقان أهم من الكمية</div>';
+}
+
 function renderQuran(){
  const md=ui.quranMode||'read';
- const toggle='<div class="at" style="margin-bottom:12px">'
- +'<button data-act="quranmode" data-v="read" class="'+(md==='read'?'ac':'')+'">📖 القراءة والحفظ</button>'
+ const toggle='<div class="at" style="margin-bottom:12px;flex-wrap:wrap">'
+ +'<button data-act="quranmode" data-v="read" class="'+(md==='read'?'ac':'')+'">📖 الورد</button>'
+ +'<button data-act="quranmode" data-v="hifz" class="'+(md==='hifz'?'ac':'')+'">🧠 الحفظ</button>'
  +'<button data-act="quranmode" data-v="listen" class="'+(md==='listen'?'ac':'')+'">🎧 الاستماع</button>'
  +'<button data-act="quranmode" data-v="marks" class="'+(md==='marks'?'ac':'')+'">🔖 العلامات</button>'
  +'</div>';
- return toggle+(md==='listen'?renderListen():md==='marks'?renderMarks():renderRead());
+ return toggle+(md==='listen'?renderListen():md==='marks'?renderMarks():md==='hifz'?renderHifz():renderRead());
 }
 
 function renderMarks(){
@@ -4206,27 +4391,6 @@ function renderRead(){
  +((( rRec.read||0)+(rRec.fr||0))>0?'<div style="margin-top:9px;display:flex;gap:6px;font-size:12px;text-align:center"><div style="flex:1;background:rgba(107,147,98,.1);border-radius:8px;padding:5px">ورد اليوم: <b style="color:var(--g)">'+(rRec.read||0)+' ص</b></div><div style="flex:1;background:rgba(90,154,146,.1);border-radius:8px;padding:5px">قراءة حرة: <b style="color:var(--tl)">'+(rRec.fr||0)+' ص</b></div></div>':'')
  +'</div>';
 
- /* ── الحفظ ── */
- const hs=data.hifzSurah||'';
- const hp=hifzPages(),hTot=Object.keys(hp).length,hDue=hifzDue();
- const hifzReg='<div class="stit"><span class="si">🧠</span>الحفظ</div>'
- +'<div class="cb gold-cb">'
- +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-size:12px;color:var(--mu)">أحفظ الآن في</div><div style="font-size:17px;font-weight:700;color:var(--go)">'+(hs?'سورة '+hs:'— لم تُحدد —')+'</div></div><button data-act="edithifz" class="btl" style="padding:8px 14px;font-size:13px">✏️ تغيير</button></div>'
- +'<div style="display:flex;gap:8px;margin-bottom:10px">'
- +'<div style="flex:1;background:rgba(107,147,98,.1);border:1px solid rgba(107,147,98,.35);border-radius:11px;padding:9px;text-align:center"><div style="font-size:11px;color:var(--mu)">حفظ جديد اليوم</div><div style="font-size:20px;font-weight:900;color:var(--g)">'+(+rRec.hN||0)+'</div><div style="font-size:11px;color:var(--mu)">صفحة</div></div>'
- +'<div style="flex:1;background:rgba(90,154,146,.1);border:1px solid rgba(90,154,146,.35);border-radius:11px;padding:9px;text-align:center"><div style="font-size:11px;color:var(--mu)">مراجعة بدون نظر</div><div style="font-size:20px;font-weight:900;color:var(--tl)">'+(+rRec.hR||0)+'</div><div style="font-size:11px;color:var(--mu)">صفحة</div></div>'
- +'</div>'
- +'<div style="display:flex;gap:8px;margin-bottom:10px"><div style="flex:1;background:rgba(201,164,76,.07);border:1px solid var(--gbr);border-radius:11px;padding:9px;text-align:center"><div style="font-size:11px;color:var(--mu)">صفحات في منهج المراجعة</div><div style="font-size:20px;font-weight:900;color:var(--go)">'+hTot+'</div></div><div style="flex:1;background:rgba(194,91,78,.07);border:1px solid rgba(194,91,78,.35);border-radius:11px;padding:9px;text-align:center"><div style="font-size:11px;color:var(--mu)">مستحق المراجعة اليوم</div><div style="font-size:20px;font-weight:900;color:'+(hDue.length?'var(--rd)':'var(--g)')+'">'+hDue.length+'</div></div></div>'
- +(hDue.length?'<button data-act="hifzduego" class="bg" style="width:100%;padding:12px;font-size:15px;margin-bottom:8px">🔁 مراجعة اليوم — ابدأ بصفحة '+hDue[0]+' ('+hDue.length+' مستحقة)</button>':(hTot?'<div class="notice" style="margin-bottom:8px">✅ لا مراجعات مستحقة اليوم — منهج التكرار المتباعد يعمل (١،٣،٧،١٦،٣٠،٦٠،١٢٠ يوماً)</div>':''))
- +'<button data-act="openhifz" class="bgo" style="width:100%;padding:13px;font-size:16px">📖 افتح مصحف الحفظ</button>'
- +(function(){
-  const cats=data.ayahCats||[];const mk=data.ayahMarks||[];
-  return '<div class="cb" style="margin-top:12px"><div style="font-size:13px;font-weight:900;color:var(--go);margin-bottom:8px">🔖 علاماتي المرجعية — '+mk.length+' آية</div><div style="display:flex;flex-wrap:wrap;gap:7px">'+cats.map(c=>{const n=mk.filter(m=>m.c===c).length;return '<button data-act="marksview" data-c="'+escH(c)+'" style="padding:8px 13px;border-radius:18px;font-size:12px;font-weight:800;border:1px solid '+(n?'var(--gbr)':'var(--br)')+';background:rgba(201,164,76,'+(n?'.1':'.03')+');color:'+(n?'var(--go)':'var(--mu)')+'">'+escH(c)+' '+(n?arNum(n):'')+'</button>';}).join('')+'</div><div style="font-size:10px;color:var(--mu);margin-top:7px">المس أي آية في وضع المدينة ثم «🔖 وسم»</div></div>';
- })()
- +'<div style="display:flex;gap:8px;margin-top:8px"><button data-act="hifztest" class="btl" style="flex:1;padding:11px;font-size:13px">🎯 اختبرني غيباً</button><button data-act="tsmstart" class="btl" style="flex:1;padding:11px;font-size:13px;border-color:var(--gbr);color:var(--go)">🎤 تسميع بإخفاء الكلمات</button></div>'
- +'<div style="font-size:12px;color:var(--mu);margin-top:9px;line-height:1.7">داخل المصحف: اضغط <b style="color:var(--g)">«تم حفظ الصفحة»</b> بعد إتقان حفظها، أو <b style="color:var(--tl)">«راجعتها بدون نظر»</b> عند المراجعة.</div>'
- +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-top:7px">«اقرأ وارتقِ ورتّل كما كنت ترتّل في الدنيا» — المداومة أهم من الكمية</div>'
- +'</div>';
 
  const qg=data.quranGoal,dg=Math.ceil(qg.times*604/qg.period);
  const circ=2*Math.PI*52,doff=circ*(1-prog/100);
@@ -4239,7 +4403,7 @@ function renderRead(){
   const dn=new Date(d+'T12:00:00');
   return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--br)"><span style="font-size:13px;color:var(--mu)">'+dn.toLocaleDateString('ar-SA',{month:'short',day:'numeric',weekday:'short'})+'</span><div style="display:flex;gap:6px;align-items:center"><span style="font-size:12px;color:var(--mu)">ص '+r.page+'</span>'+(r.khatmaEnd?'<span style="font-size:11px;color:var(--go);background:rgba(201,164,76,.12);padding:1px 6px;border-radius:5px">ختمة 🏆</span>':'')+'<span style="font-size:13px;font-weight:700;color:'+(r.read>=20?'var(--go)':r.read>=10?'var(--g)':'#6a5a38')+';background:rgba(107,147,98,.08);padding:2px 8px;border-radius:7px">+'+(r.read||0)+'</span></div></div>';
  }).join('');
- return wirdReg+hifzReg
+ return wirdReg
  +'<div class="stit"><span class="si">📖</span>تقدم الختم</div>'
  +'<div class="cb" style="text-align:center;padding:18px 13px">'
  +'<svg width="150" height="150" viewBox="0 0 120 120" style="display:block;margin:0 auto 12px"><circle cx="60" cy="60" r="52" fill="none" stroke="rgba(107,147,98,.12)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="url(#cg)" stroke-width="12" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+doff.toFixed(1)+'" stroke-linecap="round" transform="rotate(-90 60 60)"/><defs><linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#6b9362"/><stop offset="100%" stop-color="#c9a44c"/></linearGradient></defs><text x="60" y="53" text-anchor="middle" fill="#c9a44c" font-size="22" font-weight="900">'+prog+'%</text><text x="60" y="68" text-anchor="middle" fill="#6b9362" font-size="10">ص '+cp+' / 604</text>'+(pi?'<text x="60" y="82" text-anchor="middle" fill="#a89478" font-size="9">'+pi.surah+' ج'+pi.juz+'</text>':'')+'</svg>'
@@ -4486,10 +4650,11 @@ function render(){
  try{document.body.classList.toggle('qy',!!(reader&&data.qNight));}catch(e){}
  const fn={today:renderToday,quran:renderQuran,adhkar:renderWorship,sunnah:renderSunnah,salah:renderSalahTab,stats:renderStats}[ui.tab]||renderToday;
  let html='';
- try{if(tsm){html=renderTasmee()+mWrap();}else if(bkReader){html=renderBookReader()+mWrap();}else if(reader){html=renderReader()+mWrap();}else{html=renderHeader()+'<div class="ct">'+fn()+'</div>'+renderNav()+miniPlayer()+renderTasSheet()+mWrap();}}
+ try{if(tsm){html=renderTasmee()+mWrap();}else if(hw){html=renderHifzWorkshop()+mWrap();}else if(bkReader){html=renderBookReader()+mWrap();}else if(reader){html=renderReader()+mWrap();}else{html=renderHeader()+'<div class="ct">'+fn()+'</div>'+renderNav()+miniPlayer()+renderTasSheet()+mWrap();}}
  catch(e){html='<div style="padding:40px;text-align:center"><div style="font-size:40px">⚠️</div><div style="color:var(--go);margin:10px 0">حدث خطأ</div><div style="font-size:13px;color:var(--mu);direction:ltr">'+e.message+'</div><button onclick="location.reload()" class="bg" style="margin-top:14px">إعادة تحميل</button></div>';}
  document.getElementById('app').innerHTML=html;
  if(reader||tsm){fitLines();fitMadina();preloadNext();resolveQImg();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitLines);}
+ if(hw)try{hwEnsureFont();}catch(e){}
  if(ui.tab==='today'){const ds=document.getElementById('ps_today');if(ds)ds.scrollLeft=-ds.scrollWidth;}
  const jf=document.getElementById('importJsonFile');if(jf)jf.onchange=importJSON;
  const cf=document.getElementById('importCsvFile');if(cf)cf.onchange=importCSV;
@@ -4605,10 +4770,37 @@ document.addEventListener('click',function(e){
     const cc=document.getElementById('tsmCount');
     if(cc){const tot=+cc.dataset.total||tsm.hid.size;const leg=cc.textContent.indexOf('مخفية')>=0;cc.textContent='كشفت '+arNum(tsm.sh.size)+' من '+arNum(tot)+(leg?' كلمة مخفية':' كلمة');}
    }}break;
-  case 'tsmshuffle':{if(tsm)openTasmee(tsm.page);}break;
-  case 'tsmclose':tsm=null;render();break;
-  case 'tsmok':{if(tsm){const rec=getRec(TODAY);data.records[TODAY]={...rec,hR:(+rec.hR||0)+1};hifzMark(tsm.page,'review');save();toast('✅ أُثبتت المراجعة — الموعد القادم أبعد');tsm=null;render();}}break;
-  case 'tsmbad':{if(tsm){hifzMark(tsm.page,'forgot');toast('لا بأس — ستعود غداً، والتثبيت بالتكرار');tsm=null;render();}}break;
+  case 'tsmshuffle':{if(tsm){const g=tsm.hwGate,p=tsm.hwPage,s=tsm.hwStreak;openTasmee(tsm.page);if(g&&tsm){tsm.hwGate=true;tsm.hwPage=p;tsm.hwStreak=s;}}}break;
+  case 'tsmclose':{if(tsm&&tsm.hwGate&&hw){hw.streak=tsm.hwStreak||0;hw.ph='recall';hwSaveProgress();}tsm=null;render();}break;
+  case 'tsmok':{if(tsm){
+   if(tsm.hwGate){
+    const need=data.hifzCfg.gate,p=tsm.hwPage,s=(tsm.hwStreak||0)+1;
+    if(s>=need){
+     const rec=getRec(TODAY);data.records[TODAY]={...rec,hR:(+rec.hR||0)+1};
+     hifzMasterPage(p);tsm=null;hw=null;toast('🎉 أُتقنت صفحة '+arNum(p)+' — دخلت جدول المراجعة!','ok');render();
+    }else{
+     toast('✅ سردة ناجحة ('+arNum(s)+'/'+arNum(need)+') — أعِدها');
+     openTasmee(p);if(tsm){tsm.hwGate=true;tsm.hwPage=p;tsm.hwStreak=s;}render();
+    }
+    break;
+   }
+   const rec=getRec(TODAY);data.records[TODAY]={...rec,hR:(+rec.hR||0)+1};hifzMark(tsm.page,'review');save();toast('✅ أُثبتت المراجعة — الموعد القادم أبعد');tsm=null;render();
+  }}break;
+  case 'tsmbad':{if(tsm){
+   if(tsm.hwGate){const p=tsm.hwPage;toast('صفّرنا العدّاد — اسردها من جديد بلا تعثّر');openTasmee(p);if(tsm){tsm.hwGate=true;tsm.hwPage=p;tsm.hwStreak=0;}render();break;}
+   hifzMark(tsm.page,'forgot');toast('لا بأس — ستعود غداً، والتثبيت بالتكرار');tsm=null;render();
+  }}break;
+
+  /* ── ورشة الحفظ ── */
+  case 'hifzjuz':ui.hifzJuz=+el.dataset.j||30;render();break;
+  case 'hifzcfg':{const k=el.dataset.k,v=+el.dataset.v;data.hifzCfg[k]=v;save();render();}break;
+  case 'hifzpage':{const p=+el.dataset.p;if(hifzStatus(p)==='mastered'){openTasmee(p);}else{openHifzWorkshop(p);}}break;
+  case 'openhifzreader':{const pg=hifzPages();const learn=Object.keys(pg).map(Number).filter(function(n){return pg[n].st!=='mastered';}).sort(function(a,b){return a-b;})[0];openReader('hifz',learn||juzPages(ui.hifzJuz||30)[0]);}break;
+  case 'hwclose':hwClose();break;
+  case 'hwrep':{if(hw&&hw.rep<data.hifzCfg.reps){hw.rep++;render();}}break;
+  case 'hwlearndone':{if(hw){if(hw.ay+1<hw.ayat.length){hw.ph='connect';render();}else{hw.ph='connect';render();}}}break;
+  case 'hwconnectdone':{if(hw){if(hw.ay+1<hw.ayat.length){hw.ay++;hw.rep=0;hw.ph='learn';hwSaveProgress();render();}else{hwStartRecall();}}}break;
+  case 'hwresume':{if(hw)hwStartRecall();}break;
   case 'ayasel':{
    const bd=document.querySelector('.qbody');const st=bd?bd.scrollTop:0;
    if(ui.multiSel){
@@ -5383,7 +5575,8 @@ function markKahf(){const rec=getRec(TODAY);if(!rec.kahf){data.records[TODAY]={.
 function addDays(ds,n){const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return locDate(d);}
 const HIVL=[1,3,7,16,30,60,120];
 function hifzPages(){if(!data.hifz)data.hifz={pages:{}};if(!data.hifz.pages)data.hifz.pages={};return data.hifz.pages;}
-function hifzDue(){const pg=hifzPages();return Object.keys(pg).filter(p=>pg[p].due<=TODAY).map(Number).sort((a,b)=>pg[a].due===pg[b].due?a-b:(pg[a].due<pg[b].due?-1:1));}
+/* المستحق للمراجعة: الصفحات المتقنة (أو القديمة) التي حان موعدها — لا صفحات تحت الحفظ */
+function hifzDue(){const pg=hifzPages();return Object.keys(pg).filter(function(p){return pg[p].st!=='learning'&&pg[p].due&&pg[p].due<=TODAY;}).map(Number).sort((a,b)=>pg[a].due===pg[b].due?a-b:(pg[a].due<pg[b].due?-1:1));}
 function hifzMark(p,kind){
  const pg=hifzPages(),k=String(p);
  if(kind==='new'){if(!pg[k])pg[k]={l:0,r:0,due:addDays(TODAY,1),last:TODAY};}

@@ -90,6 +90,12 @@ A surah is credited at 95% (in the `timeupdate` handler) as well as on `ended`; 
 
 Every slider in the app uses the shared `.rng` class (`-webkit-appearance:none`) — without it the native control renders as a raw white bar in the WebView. The filled portion comes from a `--p` custom property (0–100) that must be set alongside `value`; changing one without the other desyncs the fill from the thumb. Two users today: the player seek bar (updated in the `timeupdate` handler) and the book reader's page slider (`.rng.rtl`, which reverses the gradient rather than the element, updated in the `input` listener so the fill tracks the finger during a drag). Text inputs all share `.inp`.
 
+### Memorization workshop (الحفظ)
+
+The `الحفظ` tab in the Quran section (`renderHifz`) is a juz board: pick a juz (`JUZP` holds the 30 Madina start pages), tap a page to open its workshop (`openHifzWorkshop` → global `hw` state, a full-screen overlay like `tsm`/`reader`, dispatched in `render`). The workshop drives the accumulative method: **learn** each ayah with a repeat counter, **connect** (recite 1→N linked), then **recall** — which hands off to the existing word-hiding engine (`openTasmee`) tagged `tsm.hwGate=true`. In gate mode the tasmee footer shows a streak; `tsmok` advances it, `tsmbad`/`tsmclose` reset or pause it, and only `hifzCfg.gate` consecutive successes call `hifzMasterPage` — which sets `pages[p].st='mastered'` and enters the spaced-review ladder. Pages under memorization (`st!=='mastered'`) are excluded from `hifzDue`.
+
+Ayah text comes from `hwAyat`: Madina glyph segments grouped by `surah:ayah` when downloaded, else plain `QL` via `P2R`. The workshop renders those glyphs in the page font `QCFP<page>`, which is lazy-loaded from IndexedDB by `loadQF` — `hwEnsureFont` (called from `render`) must load it or the glyphs fall back to tofu. `hifzCfg` (`reps`/`gate`/`dailyNew`) and per-page workshop progress (`pages[p].wk`, for resume) persist in the save blob.
+
 ### State locations
 
 | SharedPreferences file | Written by | Holds |
