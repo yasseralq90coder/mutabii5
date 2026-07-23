@@ -103,6 +103,8 @@ Web-app data (habits, backups) lives in the WebView's own DOM storage, separate 
 
 ## Conventions
 
+- `render()` replaces `#app`'s entire `innerHTML`, so anything living only in the DOM dies on every redraw — scroll position, focus and caret, and `<details>` open state. `uiCapture`/`uiRestore` (called at the top and bottom of `render`) preserve all three; without them a tap on a dhikr counter or a record button throws the user back to the top of the page. To make a new scroll container survive a redraw add its selector to `SCROLLERS`, and give any new `<details>` an `id`. Window scroll is only restored when `viewKey()` is unchanged — that key deliberately includes the sub-mode (`adhMode`, `quranMode`, `sunSect`), so moving between sub-sections starts at the top like a tab switch. The comparison uses `_lastView` (what is actually on screen), not the live state, because click handlers mutate `ui` *before* calling `render`.
+
 - The today screen's day arc (`dayThread` → `.arcCard`) is redrawn only by `render()`; its per-second motion (progress sweep, glowing now-marker, countdown) is done by `arcTick`, called from `updateClock`. Keep the two in sync — the geometry constants live in both.
 - The web settings screen (`openSettings`) and the recording screen (`vScrHTML`) are full-page overlays: they emit a `.spg` root, which `mWrap()` detects to drop the modal's padding. Everything else keeps using the small centered `.mbox`.
 - Native settings UI is built programmatically in `SettingsActivity` — there are no layout XML files; only drawables, colors, strings, and themes under `res/`.

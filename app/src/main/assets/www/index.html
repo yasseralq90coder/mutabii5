@@ -1846,7 +1846,7 @@ function dayThread(rec){
  return '<div class="stit"><span class="si">🌅</span>قوس اليوم</div>'
  +'<div class="arcCard">'+arc+nextCard
  +(chips?'<div class="arcChips">'+chips+'</div>':'')
- +'<details class="arcDet"><summary>الرواتب وأذكار الصلوات</summary>'+rw+'</details>'
+ +'<details class="arcDet" id="arcDet"><summary>الرواتب وأذكار الصلوات</summary>'+rw+'</details>'
  +'</div>';
 }
 /* تحريك القوس كل ثانية بلا إعادة رسم الصفحة */
@@ -3461,7 +3461,14 @@ function vUI(){
 }
 
 /* ── شاشة تسجيل الأذكار ── */
-function vScrShow(){modalHTML=vScrHTML();render();}
+function vScrShow(){
+ modalHTML=vScrHTML();render();
+ /* أثناء التسجيل: أبقِ بطاقة الذكر ونصَّه أمام عينيك بدل قفز الصفحة */
+ if(vRec)try{
+  const c=document.getElementById('vCard-'+vRec.id);
+  if(c)c.scrollIntoView({block:'center',behavior:'smooth'});
+ }catch(e){}
+}
 function vScrHTML(){
  const s=ui.vScr,vid=s.vid,cat=s.cat||'sabah';
  const items=vItems(cat),done=vDone(vid,cat);
@@ -3474,13 +3481,14 @@ function vScrHTML(){
   const k=vKey(vid,cat,it.id),has=!!vHave[k];
   const recing=!!(vRec&&vRec.vid===vid&&vRec.cat===cat&&vRec.id===it.id);
   const busy=!!vRec&&!recing;
-  rows+='<div style="border:1px solid '+(recing?'var(--rd)':(has?'rgba(107,147,98,.4)':'var(--br)'))+';border-radius:14px;padding:11px 12px;margin-bottom:9px;background:'+(recing?'rgba(194,91,78,.08)':'rgba(20,16,10,.45)')+'">'
+  rows+='<div id="vCard-'+it.id+'" style="border:1px solid '+(recing?'var(--rd)':(has?'rgba(107,147,98,.4)':'var(--br)'))+';border-radius:14px;padding:11px 12px;margin-bottom:9px;background:'+(recing?'rgba(194,91,78,.08)':'rgba(20,16,10,.45)')+'">'
    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
    +'<span style="flex:0 0 24px;height:24px;border-radius:8px;background:rgba(201,164,76,.12);color:var(--go);font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center">'+arNum(i+1)+'</span>'
    +'<span style="flex:1;font-size:13px;font-weight:800;color:var(--tx)">'+escH(it.n)+(it.c>1?' <span style="font-size:10px;color:var(--tl)">×'+arNum(it.c)+'</span>':'')+'</span>'
    +'<span style="font-size:11px;font-weight:800;color:'+(has?'var(--g)':'var(--mu)')+'">'+(has?'✓ مسجَّل':'—')+'</span>'
    +'</div>'
-   +'<div class="arab" style="font-size:12.5px;line-height:1.95;color:var(--mu);max-height:76px;overflow-y:auto;margin-bottom:9px">'+escH(it.t)+'</div>'
+   /* أثناء التسجيل يُعرض النص كاملاً وبخط أكبر — أنت تقرؤه الآن */
+   +'<div class="arab" style="font-size:'+(recing?'16px':'12.5px')+';line-height:'+(recing?'2.15':'1.95')+';color:'+(recing?'var(--tx)':'var(--mu)')+';'+(recing?'':'max-height:76px;overflow-y:auto;')+'margin-bottom:9px">'+escH(it.t)+'</div>'
    +(recing?'<div id="vTimer" style="text-align:center;font-size:13px;font-weight:900;color:var(--rd);margin-bottom:8px">⏺ ٠:٠٠</div>':'')
    +'<div style="display:flex;gap:6px">'
    +'<button data-act="'+(recing?'vstop':'vrec')+'" data-id="'+it.id+'"'+(busy?' disabled':'')+' style="flex:1.4;padding:10px;border-radius:11px;border:none;font-size:13px;font-weight:900;opacity:'+(busy?'.4':'1')+';background:'+(recing?'linear-gradient(135deg,#c25b4e,#8f3f35)':'linear-gradient(135deg,var(--g),var(--g2))')+';color:#fff">'+(recing?'⏹ إيقاف وحفظ':(has?'🎤 إعادة التسجيل':'🎤 تسجيل'))+'</button>'
@@ -4016,7 +4024,7 @@ function playerCard(cur){
   +'<button class="plSecB" data-act="audfavadd">♡ حفظ الصفحة</button>'
   +'<button class="plSecB'+(ui.followTilawa?' on':'')+'" data-act="tilawa">◉ تلاوة</button>'
   +'</div>';
- const more='<details class="plMore"><summary>المزيد</summary>'
+ const more='<details class="plMore" id="plMore"><summary>المزيد</summary>'
   +'<div class="plMoreIn">'
   +'<div class="plRow">'
   +'<button class="plSk2" data-act="seek" data-d="-30">↺ ٣٠ ثانية</button>'
@@ -4408,7 +4416,72 @@ function mWrap(){
  const full=modalHTML.indexOf('class="spg"')>=0?' full':'';
  return '<div class="modal'+full+'" data-act="closemodal">'+modalHTML+'</div>';
 }
+/* ═══════════════ حفظ حالة الواجهة عبر إعادة الرسم ═══════════════
+   render() يستبدل محتوى الصفحة كاملاً، فيضيع كل ما ليس في الحالة:
+   موضع التمرير، والتركيز على حقل تكتب فيه، والأقسام المطوية.
+   بدون هذا تقفز الصفحة لأعلاها عند كل نقرة عدّ أو تسجيل. */
+const SCROLLERS=['.spgb','.mbox','#bkBody','.qbody','.plAyat'];
+function viewKey(){
+ /* الأقسام الفرعية جزء من هوية الشاشة — الانتقال بينها يبدأ من الأعلى كالتبويب */
+ return (typeof tsm!=='undefined'&&tsm?'tsm':'')
+  +(typeof bkReader!=='undefined'&&bkReader?'bk'+bkReader.id:'')
+  +(typeof reader!=='undefined'&&reader?'rd':'')
+  +'|'+ui.tab+'|'+(ui.adhMode||'')+'|'+(ui.quranMode||'')+'|'+(ui.sunSect||'');
+}
+let _lastView='';
+function uiCapture(){
+ /* المقارنة تكون بمفتاح ما هو معروض فعلاً (_lastView) لا بالحالة الجديدة —
+    فالمعالج يغيّر ui.tab قبل استدعاء render فيبدو التبويب الجديد كأنه القديم */
+ const o={sc:{},det:{},win:window.scrollY||window.pageYOffset||0,view:_lastView,foc:null};
+ try{
+  SCROLLERS.forEach(function(s){
+   const e=document.querySelector(s);
+   if(e&&e.scrollTop>0)o.sc[s]=e.scrollTop;
+  });
+  document.querySelectorAll('details[id]').forEach(function(e){o.det[e.id]=e.open;});
+  const a=document.activeElement;
+  if(a&&a.id&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')){
+   o.foc={id:a.id,v:a.value};
+   try{o.foc.s=a.selectionStart;o.foc.e=a.selectionEnd;}catch(e){}
+  }
+ }catch(e){}
+ return o;
+}
+function uiRestore(o){
+ if(!o)return;
+ try{
+  SCROLLERS.forEach(function(s){
+   if(o.sc[s]==null)return;
+   const e=document.querySelector(s);
+   if(e)e.scrollTop=o.sc[s];
+  });
+  document.querySelectorAll('details[id]').forEach(function(e){
+   if(o.det[e.id]!=null)e.open=o.det[e.id];
+  });
+  if(o.foc){
+   const el=document.getElementById(o.foc.id);
+   if(el){
+    /* الحقول غير المربوطة بالحالة تُبنى فارغة — أعِد ما كان يكتبه */
+    if(o.foc.v&&!el.value)el.value=o.foc.v;
+    try{el.focus({preventScroll:true});}catch(e){try{el.focus();}catch(e2){}}
+    if(o.foc.s!=null&&el.setSelectionRange){try{el.setSelectionRange(o.foc.s,o.foc.e);}catch(e){}}
+   }
+  }
+  /* تمرير الصفحة يُستعاد ما دمنا في نفس الشاشة — تبديل التبويب يبدأ من أعلاها */
+  if(o.view===viewKey()){
+   if(o.win){
+    window.scrollTo(0,o.win);
+    /* المحتوى الجديد قد لا يكون قِيس بعد فيُقصّ التمرير — أعِد الضبط بعد التخطيط */
+    if(Math.abs((window.scrollY||0)-o.win)>4){
+     requestAnimationFrame(function(){try{window.scrollTo(0,o.win);}catch(e){}});
+    }
+   }
+  }
+  else if(o.win)window.scrollTo(0,0);
+ }catch(e){}
+}
 function render(){
+ const _keep=uiCapture();
  ensureDefaults();applyTheme();
  try{document.body.classList.toggle('qy',!!(reader&&data.qNight));}catch(e){}
  const fn={today:renderToday,quran:renderQuran,adhkar:renderWorship,sunnah:renderSunnah,salah:renderSalahTab,stats:renderStats}[ui.tab]||renderToday;
@@ -4421,6 +4494,7 @@ function render(){
  const jf=document.getElementById('importJsonFile');if(jf)jf.onchange=importJSON;
  const cf=document.getElementById('importCsvFile');if(cf)cf.onchange=importCSV;
  const vf=document.getElementById('importVoiceFile');if(vf)vf.onchange=importVoice;
+ uiRestore(_keep);_lastView=viewKey();
 }
 
 /* ═══════════════ الأحداث ═══════════════ */
