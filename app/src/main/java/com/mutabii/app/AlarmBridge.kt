@@ -140,9 +140,12 @@ class AlarmBridge(private val ctx: Context) {
                 "adhanUri" -> e.putString(Prefs.K_ADHAN_URI, value)
                 "wakeUri" -> e.putString(Prefs.K_WAKE_URI, value)
                 else -> {
-                    // adhan_<صلاة> و iqama_<صلاة>
+                    // adhan_<صلاة> و iqama_<صلاة> — لأسماء الصلوات المعروفة وحدها،
+                    // فلا تتضخّم ملفات التفضيلات بمفاتيح لا يقرؤها أحد
+                    val p = key.substringAfter('_', "")
+                    if (p !in Prefs.PRAYERS) return
                     if (key.startsWith("adhan_")) e.putBoolean(key, value == "1")
-                    else if (key.startsWith("iqama_")) e.putInt(key, value.toIntOrNull() ?: 20)
+                    else if (key.startsWith("iqama_")) e.putInt(key, (value.toIntOrNull() ?: 20).coerceIn(0, 120))
                     else return
                 }
             }
@@ -397,8 +400,11 @@ class AlarmBridge(private val ctx: Context) {
     }
 
     private fun sanitize(n: String): String {
-        val base = n.ifBlank { "mutabii-backup" }
-        return base.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        // نحذف فواصل المسار ومحارف التحكّم، ونمنع الاسم المخفي أو الصاعد لمجلد أعلى
+        var base = n.replace(Regex("[\\\\/:*?\"<>|\\x00-\\x1F]"), "_").trim()
+        while (base.startsWith(".")) base = base.removePrefix(".")
+        if (base.isBlank()) base = "mutabii-backup"
+        return base.take(120)
     }
 
     private fun toastMain(msg: String) {
