@@ -88,10 +88,11 @@ object AlarmScheduler {
                 for (part in s.split(",")) {
                     val code = part.trim().toIntOrNull() ?: continue
                     val base = Intent(c, AlarmReceiver::class.java).apply { action = ACTION_FIRE }
+                    // NO_CREATE: الإلغاء لا يجوز أن يُنشئ نيّة معلّقة جديدة ثم يلغيها
                     val pi = PendingIntent.getBroadcast(
                         c, code, base,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
+                        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                    ) ?: continue
                     am.cancel(pi); pi.cancel()
                 }
             }

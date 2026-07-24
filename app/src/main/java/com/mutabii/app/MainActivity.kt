@@ -52,6 +52,55 @@ class MainActivity : android.app.Activity() {
         const val REQ_LOC = 104
         const val REQ_SOUND = 556
 
+        /**
+         * قفل التصفّح على صفحة التطبيق وحدها.
+         *
+         * ‏MTBNative مُحقَن في كل صفحة يعرضها هذا الـWebView — بما فيها أيّ رابط خارجي.
+         * فلو فُتح موقع بعيد هنا (رابط في نصّ، أو إعادة توجيه) لأصبح بمقدوره استدعاء
+         * ‏getAlarms و recStart و saveText: يقرأ إعداداتك، أو يسجّل بميكروفونك، أو يكتب ملفات.
+         * لذلك: أصول التطبيق تبقى داخلاً، وكل ما عداها يُفتح في متصفّح النظام.
+         *
+         * ملاحظة: العميل يُبنى بلا أي مرجع للنشاط — الـWebView يعيش أطول من الشاشة
+         * (ليستمر الصوت) فأيّ التقاط للنشاط هنا يعني تسريبه.
+         */
+        private fun assetOnlyClient(app: Context): WebViewClient =
+            object : WebViewClient() {
+                private fun isOurs(u: Uri?): Boolean {
+                    val url = u?.toString() ?: return false
+                    return url.startsWith("file:///android_asset/") ||
+                        url.startsWith("file:///android_res/") ||
+                        url == "about:blank"
+                }
+
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?, request: android.webkit.WebResourceRequest?
+                ): Boolean {
+                    val u = request?.url ?: return true
+                    if (isOurs(u)) return false
+                    openOutside(app, u)
+                    return true
+                }
+
+                @Suppress("DEPRECATION")
+                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                    val u = try { Uri.parse(url ?: return true) } catch (_: Exception) { return true }
+                    if (isOurs(u)) return false
+                    openOutside(app, u)
+                    return true
+                }
+            }
+
+        /** يفتح الروابط الخارجية في متصفّح النظام — خارج نطاق الجسر تماماً. */
+        private fun openOutside(app: Context, u: Uri) {
+            val sch = (u.scheme ?: "").lowercase()
+            if (sch != "http" && sch != "https" && sch != "mailto" && sch != "tel") return
+            try {
+                app.startActivity(
+                    Intent(Intent.ACTION_VIEW, u).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            } catch (_: Exception) {}
+        }
+
         /** يفتح منتقي ملف صوت لتنبيه الأذان أو الإيقاظ. */
         fun pickSound(target: String) {
             val a = current?.get() ?: return
@@ -127,17 +176,27 @@ class MainActivity : android.app.Activity() {
         s.domStorageEnabled = true
         @Suppress("DEPRECATION")
         s.databaseEnabled = true
+        // مطلوب لتحميل file:///android_asset على أندرويد ٨–١٠ (minSdk 26)
         s.allowFileAccess = true
+        // يبقى مفتوحاً: منتقي الملفات يُعيد content:// لاستعادة JSON واستيراد CSV واختيار الصوت.
+        // الحماية الفعلية هي قفل التصفّح أدناه — فلا توجد صفحة غريبة أصلاً لتستغلّه.
         s.allowContentAccess = true
+        // تصريح دفاعي: صفحة file:// يجب ألّا تقرأ ملفات أخرى ولا أصولاً بعيدة
+        @Suppress("DEPRECATION")
+        s.allowFileAccessFromFileURLs = false
+        @Suppress("DEPRECATION")
+        s.allowUniversalAccessFromFileURLs = false
         s.mediaPlaybackRequiresUserGesture = false
         s.cacheMode = WebSettings.LOAD_DEFAULT
         s.setSupportZoom(false)
         s.builtInZoomControls = false
         s.loadWithOverviewMode = true
         s.useWideViewPort = true
-        s.javaScriptCanOpenWindowsAutomatically = true
+        // النوافذ المنبثقة التلقائية ليست مستعملة، وفتحها يوسّع سطح الهجوم بلا داعٍ
+        s.javaScriptCanOpenWindowsAutomatically = false
+        s.setSupportMultipleWindows(false)
         w.setBackgroundColor(0xFF1A1410.toInt())
-        w.webViewClient = WebViewClient()
+        w.webViewClient = assetOnlyClient(applicationContext)
         w.addJavascriptInterface(AlarmBridge(applicationContext), "MTBNative")
     }
 
@@ -176,8 +235,24 @@ class MainActivity : android.app.Activity() {
             }
         }
 
+        /**
+         * لا نمنح إلا الميكروفون، ولا نمنحه إلا لصفحتنا وبعد أن يمنحه النظام أصلاً.
+         * المنح الأعمى لكل ما يُطلب كان يشمل الكاميرا وحماية المحتوى لأي أصل.
+         */
         override fun onPermissionRequest(request: PermissionRequest?) {
-            try { request?.grant(request.resources) } catch (_: Exception) {}
+            val r = request ?: return
+            try {
+                val origin = r.origin?.toString() ?: ""
+                val ours = origin.startsWith("file://")
+                val micOk = checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                    PackageManager.PERMISSION_GRANTED
+                val wanted = r.resources.filter {
+                    it == PermissionRequest.RESOURCE_AUDIO_CAPTURE && ours && micOk
+                }.toTypedArray()
+                if (wanted.isEmpty()) r.deny() else r.grant(wanted)
+            } catch (_: Exception) {
+                try { r.deny() } catch (_: Exception) {}
+            }
         }
 
         /**
@@ -329,7 +404,12 @@ class MainActivity : android.app.Activity() {
         try {
             val w = window ?: return
             if (Build.VERSION.SDK_INT >= 28) {
-                w.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                // تعديل w.attributes في مكانه لا يُطبَّق: لا بدّ من إعادة إسناد الكائن
+                // حتى يُعيد النظام حساب التخطيط — وإلا بقي النقش (notch) يقصّ الواجهة.
+                val lp = w.attributes
+                lp.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                w.attributes = lp
             }
             if (full) {
                 w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -359,6 +439,10 @@ class MainActivity : android.app.Activity() {
                 if (!WebHolder.audioActive) {
                     WebHolder.web = null
                     w.destroy()
+                } else {
+                    // الـWebView يبقى حيّاً للصوت — لكن chromeClient يمسك بهذه الشاشة
+                    // المُتلَفة، فيتسرّب النشاط بأكمله. نفكّه ويُعاد ضبطه عند العودة.
+                    try { w.webChromeClient = null } catch (_: Exception) {}
                 }
             }
         } catch (_: Exception) {}

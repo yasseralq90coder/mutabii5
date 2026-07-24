@@ -3800,14 +3800,27 @@ const RECITERS=[
  {id:'kurdi',name:'رعد الكردي',match:'رعد محمد الكردي',fallback:'https://server6.mp3quran.net/kurdi/'}
 ];
 function reciterName(id){const r=RECITERS.find(x=>x.id===id);return r?r.name:id;}
-function reciterBase(id){return (data.reciterBases&&data.reciterBases[id])||((RECITERS.find(r=>r.id===id)||{}).fallback);}
+/* عنوان الخادم القادم من الواجهة البرمجية قد يأتي بـhttp أو بلا شرطة ختامية،
+   فينتج رابطٌ مكسور أو طلبٌ غير مشفّر يُرفض على أندرويد. نُسوّيه دائماً. */
+function normBase(u){
+ u=String(u||'').trim();
+ if(!u)return '';
+ if(u.slice(0,7)==='http://')u='https://'+u.slice(7);
+ if(u.slice(0,8)!=='https://')return '';
+ if(u.charAt(u.length-1)!=='/')u+='/';
+ return u;
+}
+function reciterFallback(id){return (RECITERS.find(r=>r.id===id)||{}).fallback||'';}
+function reciterBase(id){
+ return normBase((data.reciterBases&&data.reciterBases[id])||'')||normBase(reciterFallback(id));
+}
 function audioURL(id,no){return reciterBase(id)+String(no).padStart(3,'0')+'.mp3';}
 function resolveReciters(){
  fetch('https://www.mp3quran.net/api/v3/reciters?language=ar').then(r=>r.json()).then(j=>{
   const bases={...(data.reciterBases||{})},reads={...(data.reciterReads||{})};let ch=false;
   RECITERS.forEach(rc=>{
    const f=(j.reciters||[]).find(x=>x.name&&x.name.indexOf(rc.match)>=0);
-   if(f&&f.moshaf&&f.moshaf.length){const m=f.moshaf.find(x=>+x.surah_total>=114)||f.moshaf[0];if(m&&m.server){bases[rc.id]=m.server;if(m.id)reads[rc.id]=m.id;ch=true;}}
+   if(f&&f.moshaf&&f.moshaf.length){const m=f.moshaf.find(x=>+x.surah_total>=114)||f.moshaf[0];if(m&&m.server){const nb=normBase(m.server);if(nb){bases[rc.id]=nb;if(m.id)reads[rc.id]=m.id;ch=true;}}}
   });
   if(ch){data.reciterBases=bases;data.reciterReads=reads;save();if(ui.tab==='quran'&&ui.quranMode==='listen')render();}
  }).catch(e=>{});
@@ -3957,6 +3970,13 @@ function ensureAudio(){
   /* انقطاع الشبكة: أعد المحاولة من نفس الثانية بدل إسقاط الجلسة */
   if((audioState._retry||0)<2){
    const no=audioState.surah,t=Math.floor(audioState.time||0),r=(audioState._retry||0)+1;
+   /* الخادم المُكتشَف من الواجهة البرمجية قد يكون معطوباً أو غير مشفّر:
+      اطرحه وارجع إلى الخادم المدمّج قبل أن تستسلم السورة. */
+   try{
+    if(data.reciterBases&&data.reciterBases[data.reciter]){
+     delete data.reciterBases[data.reciter];save();
+    }
+   }catch(e){}
    toast('⚠️ انقطع الصوت — إعادة المحاولة…','warn');
    setTimeout(function(){
     if(audioState.surah!==no)return;
@@ -4036,19 +4056,24 @@ function playSurah(no,seekTo){
  ensureAudio();audioState.surah=no;audioState.secs=0;audioState.time=seekTo||0;audioState.dur=0;audioState.aFrom=0;audioState.aTo=0;
  audioState._credited=false;audioState._retry=0;
  TL={no:0,arr:null,ay:null,cur:-1,loading:false};loadTilawa(); /* تتبع الآية الجارية تلقائياً */
+ try{if(audioState._objUrl){URL.revokeObjectURL(audioState._objUrl);audioState._objUrl=null;}}catch(e){}
  audioEl.src=audioURL(data.reciter,no);
- /* بلا إنترنت أولاً: لو السورة محفوظة شغّلها من الجهاز */
+ /* النسخة المحفوظة أولاً: قراءة IndexedDB أسرع بكثير من وصول أول جزء من البثّ،
+    فتفوز عملياً كلما كانت السورة منزَّلة. لكن كان التبديل يقع أحياناً بعد أن يبدأ
+    الصوت فعلاً فينقطع بعد جزء من الثانية — لذا لا نبدّل المصدر بعد أن يصير
+    التشغيل حقيقياً (بيانات كافية أو تقدّم في الزمن). */
  (function(){
   const _no=no,_gen=(audioState._srcGen=(audioState._srcGen||0)+1);
   mdbGet(qadKey(data.reciter,_no)).then(function(bl){
    if(!bl)return;
    if(audioState.surah!==_no||audioState._srcGen!==_gen)return;
-   const t=audioEl.currentTime||0,wasPlaying=!audioEl.paused;
+   if(audioEl.readyState>=3||(audioEl.currentTime||0)>0.05)return;   /* بدأ فعلاً — لا تقطعه */
+   const wasPlaying=!audioEl.paused;
    try{if(audioState._objUrl)URL.revokeObjectURL(audioState._objUrl);}catch(e){}
    audioState._objUrl=URL.createObjectURL(bl);
    audioEl.src=audioState._objUrl;
-   if(t>0.5)audioEl.currentTime=t;
-   if(wasPlaying)audioEl.play().catch(function(){ toast('تعذر تشغيل الصوت تلقائياً، يرجى التفاعل مع الصفحة', 'warn'); });
+   if(seekTo&&seekTo>0){const h2=function(){try{audioEl.currentTime=seekTo;}catch(e){}audioEl.removeEventListener('loadedmetadata',h2);};audioEl.addEventListener('loadedmetadata',h2);}
+   if(wasPlaying)audioEl.play().catch(function(){});
   }).catch(function(e){});
  })();
  if(seekTo&&seekTo>0){const h=function(){try{audioEl.currentTime=seekTo;}catch(e){}audioEl.removeEventListener('loadedmetadata',h);};audioEl.addEventListener('loadedmetadata',h);}
@@ -4070,8 +4095,20 @@ function playSurah(no,seekTo){
  });
 }
 function pauseAudio(){if(audioEl&&audioState.playing){audioEl.pause();accumSecs();audioState.playing=false;persistResume();render();}}
-function resumeAudio(){if(audioEl&&audioState.surah){audioEl.play();audioState.playing=true;audioState.startTs=Date.now();render();}}
-function stopAudio(){if(!audioEl||!audioState.surah)return;favStop=null;accumSecs();persistResume();logListen(audioState.surah,audioState.secs);audioEl.pause();audioEl.src='';audioState={surah:0,playing:false,startTs:0,secs:0,time:0,dur:0};toast('⏹ حُفظ موضعك — تقدر تكمل لاحقاً');render();}
+function resumeAudio(){
+ if(!audioEl||!audioState.surah)return;
+ const p=audioEl.play();
+ audioState.playing=true;audioState.startTs=Date.now();render();
+ /* لو رفض المتصفّح التشغيل فالحالة تكذب على المستخدم وعلى الإشعار — صحّحها */
+ if(p&&p.catch)p.catch(function(e){
+  if((e&&e.name)==='AbortError')return;
+  setTimeout(function(){
+   if(!audioEl||audioEl.paused===false)return;
+   audioState.playing=false;render();
+  },600);
+ });
+}
+function stopAudio(){if(!audioEl||!audioState.surah)return;favStop=null;accumSecs();persistResume();logListen(audioState.surah,audioState.secs);audioEl.pause();audioEl.src='';try{if(audioState._objUrl)URL.revokeObjectURL(audioState._objUrl);}catch(e){}audioState={surah:0,playing:false,startTs:0,secs:0,time:0,dur:0};toast('⏹ حُفظ موضعك — تقدر تكمل لاحقاً');render();}
 function seekBy(d){if(!audioEl||!audioState.surah)return;let t=(audioEl.currentTime||0)+d;t=Math.max(0,Math.min(t,audioEl.duration||t));audioEl.currentTime=t;audioState.time=t;persistResume();}
 function seekAbs(t){if(!audioEl||!audioState.surah)return;t=Math.max(0,Math.min(t,audioEl.duration||t));audioEl.currentTime=t;audioState.time=t;}
 function markListenProgress(no){
@@ -6549,6 +6586,7 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
     }catch(e){}
     return 'القرآن الكريم';
   }
+  var _lastPush=0;
   function mediaSync(force){
     try{
       if(!window.MTBNative||!MTBNative.mediaUpdate) return;
@@ -6559,15 +6597,33 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
       }
       var pos=Math.floor((st.time||0)*1000), dur=Math.floor((st.dur||0)*1000);
       var playing=!!st.playing;
-      var key=st.surah+'|'+playing+'|'+Math.floor(pos/1000)+'|'+dur;
-      if(!force&&key===_last) return;
-      _last=key;
+      /* الموضع ليس جزءاً من المفتاح عمداً: أندرويد يُحرّك المؤشّر بنفسه من
+         PlaybackState وسرعة التشغيل. وضعُه في المفتاح كان يدفع تحديثاً أصلياً
+         كل ثانية طوال التلاوة — إعادة بناء إشعار ونداء خدمة ٦٠ مرّة في الدقيقة. */
+      var key=st.surah+'|'+playing+'|'+dur+'|'+sName(st.surah)+'|'+rName();
+      var now=Date.now();
+      if(!force&&key===_last&&(now-_lastPush)<15000) return;
+      _last=key; _lastPush=now;
       MTBNative.mediaUpdate(JSON.stringify({
         surah:st.surah, title:sName(st.surah), artist:rName(),
         playing:playing, pos:pos, dur:dur
       }));
     }catch(e){}
   }
+
+  /* التقديم والتأخير من داخل التطبيق: الموضع لم يعد يُدفع كل ثانية، فندفعه عند القفز
+     وإلا بقي مؤشّر شريط الإشعار على المكان القديم حتى المزامنة الدورية. */
+  try{
+    ['seekBy','seekAbs'].forEach(function(fn){
+      var orig=window[fn];
+      if(typeof orig!=='function') return;
+      window[fn]=function(){
+        var r=orig.apply(this,arguments);
+        try{ mediaSync(true); }catch(e){}
+        return r;
+      };
+    });
+  }catch(e){}
 
   /* أوامر قادمة من الإشعار / أندرويد أوتو / سماعة البلوتوث */
   window.__mtbCmd=function(cmd,arg){
@@ -6599,6 +6655,13 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
         case 'playsurah':
           if(typeof startFree==='function') startFree(+arg||1);
           else if(typeof playSurah==='function') playSurah(+arg||1);
+          break;
+        /* «إكمال الختمة السماعية» في أندرويد أوتو — كان الأمر يُرسَل بلا مُستقبِل فلا يحدث شيء */
+        case 'resumekhatma':
+          if(typeof khatmaNext==='function'&&typeof startKhatma==='function'){
+            var k=khatmaNext();
+            startKhatma(k.no,k.time||0);
+          }
           break;
       }
       setTimeout(function(){ mediaSync(true); },250);
