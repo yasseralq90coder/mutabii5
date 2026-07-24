@@ -752,6 +752,14 @@ const DUACATS={
 };
 function duaList(cat){return (DUACATS[cat]||{}).list||[];}
 function duaCatName(cat){return (DUACATS[cat]||{}).name||'';}
+/* الفئات القابلة للتسجيل بصوت المستخدم (كلها + الأدعية اليومية السريعة) */
+const VREC_CATS=['sabah','masa','sleep','wake','travel','jumua','quick'];
+function vCatIc(cat){return cat==='quick'?'📖':((DUACATS[cat]||{}).ic||'📿');}
+function vCatShort(cat){
+ if(cat==='quick')return 'يومية';
+ return String(duaCatName(cat)).replace('أذكار ','').replace('أدعية ','').replace('ساعة إجابة ','');
+}
+function vGrandTotal(){let n=0;VREC_CATS.forEach(function(c){n+=vItems(c).length;});return n;}
 
 /* ═══════════════ حساب أوقات الصلاة ═══════════════ */
 function jDay(y,m,d){if(m<=2){y--;m+=12;}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5;}
@@ -1938,7 +1946,7 @@ function openSettings(){
 
 /* ── تبويب الأصوات: اختيار صوت الأذكار وإدارة التسجيلات ── */
 function vManageHTML(card,row){
- const cur=data.adhVoice||'tts',tot=ADK_SABAH.length+ADK_MASA.length;
+ const cur=data.adhVoice||'tts',tot=vGrandTotal();
  const pickRow=function(id,ic,title,sub){
   const on=cur===id;
   return '<button data-act="vpick" data-v="'+id+'" style="display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:none;border-bottom:1px solid rgba(255,255,255,.05);background:'+(on?'rgba(201,164,76,.1)':'none')+';text-align:right;font-family:inherit">'
@@ -1966,8 +1974,9 @@ function vManageHTML(card,row){
     +'<button data-act="vdelcancel" style="flex:1;padding:9px;border-radius:11px;border:1px solid var(--br);background:none;color:var(--mu);font-size:12px;font-weight:800;font-family:inherit">إلغاء</button></div></div>';
   }
   list+='<div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05)">'
-   +'<button data-act="vscropen" data-v="'+v.id+'" data-c="sabah" style="flex:1 1 46%;padding:10px 5px;border-radius:11px;border:1px solid var(--gbr);background:rgba(201,164,76,.08);color:var(--go);font-size:11.5px;font-weight:800;font-family:inherit">🌅 سجّل الصباح '+arNum(vDone(v.id,'sabah'))+'/'+arNum(ADK_SABAH.length)+'</button>'
-   +'<button data-act="vscropen" data-v="'+v.id+'" data-c="masa" style="flex:1 1 46%;padding:10px 5px;border-radius:11px;border:1px solid var(--gbr);background:rgba(201,164,76,.08);color:var(--go);font-size:11.5px;font-weight:800;font-family:inherit">🌙 سجّل المساء '+arNum(vDone(v.id,'masa'))+'/'+arNum(ADK_MASA.length)+'</button>'
+   +VREC_CATS.map(function(c){const dn=vDone(v.id,c),tt=vItems(c).length,full=dn>=tt&&tt>0;
+     return '<button data-act="vscropen" data-v="'+v.id+'" data-c="'+c+'" style="flex:1 1 46%;padding:10px 5px;border-radius:11px;border:1px solid '+(full?'var(--g)':'var(--gbr)')+';background:'+(full?'rgba(107,147,98,.1)':'rgba(201,164,76,.08)')+';color:'+(full?'var(--g)':'var(--go)')+';font-size:11.5px;font-weight:800;font-family:inherit">'+vCatIc(c)+' '+vCatShort(c)+' '+arNum(dn)+'/'+arNum(tt)+'</button>';
+   }).join('')
    +'<button data-act="vren" data-v="'+v.id+'" style="flex:1;padding:8px 5px;border-radius:10px;border:1px solid var(--br);background:none;color:var(--mu);font-size:11px;font-weight:800;font-family:inherit">✏️ تسمية</button>'
    +'<button data-act="vexport" data-v="'+v.id+'" style="flex:1;padding:8px 5px;border-radius:10px;border:1px solid var(--tl);background:none;color:var(--tl);font-size:11px;font-weight:800;font-family:inherit">⬆️ تصدير</button>'
    +'<button data-act="vdelask" data-v="'+v.id+'" style="flex:1;padding:8px 5px;border-radius:10px;border:1px solid var(--rd);background:none;color:var(--rd);font-size:11px;font-weight:800;font-family:inherit">🗑 حذف</button>'
@@ -3544,7 +3553,7 @@ function vPickModal(){
  };
  let h=one('tts','🔈','قارئ الجهاز',ttsOK()?'النطق الآلي (قوقل)':'غير متاح على هذا الجهاز',cur==='tts');
  (data.voices||[]).forEach(function(v){
-  const n=vTotal(v.id),tot=ADK_SABAH.length+ADK_MASA.length;
+  const n=vTotal(v.id),tot=vGrandTotal();
   h+=one(v.id,'🎙',escH(v.name),n?('مسجَّل '+arNum(n)+' من '+arNum(tot)+' — الباقي يُقرأ بقارئ الجهاز'):'لا توجد تسجيلات بعد',cur===v.id);
  });
  modalHTML='<div class="mbox" data-pg="vpick">'
@@ -3595,12 +3604,12 @@ function vdbKeys(){return vdbStore('readonly').then(function(st){return new Prom
 
 let vHave={};                    /* خريطة المفاتيح المسجَّلة — لعرض العدّادات بلا انتظار */
 function vKey(vid,cat,id){return vid+'|'+cat+'-'+id;}
-function vItems(cat){return cat==='masa'?ADK_MASA:ADK_SABAH;}
-function vCatName(cat){return cat==='masa'?'أذكار المساء':'أذكار الصباح';}
+function vItems(cat){return cat==='quick'?ADK_QUICK:duaList(cat);}
+function vCatName(cat){return cat==='quick'?'أدعية يومية':(duaCatName(cat)||'أذكار');}
 function vProf(vid){return (data.voices||[]).find(function(v){return v.id===vid;})||null;}
 function vName(vid){const p=vProf(vid);return p?p.name:'قارئ الجهاز';}
 function vDone(vid,cat){let n=0;vItems(cat).forEach(function(it){if(vHave[vKey(vid,cat,it.id)])n++;});return n;}
-function vTotal(vid){return vDone(vid,'sabah')+vDone(vid,'masa');}
+function vTotal(vid){let n=0;VREC_CATS.forEach(function(c){n+=vDone(vid,c);});return n;}
 function vRefreshHave(cb){vdbKeys().then(function(ks){vHave={};ks.forEach(function(k){vHave[k]=true;});cb&&cb();});}
 try{vRefreshHave();}catch(e){}
 
@@ -3882,7 +3891,7 @@ function vScrHTML(){
    +'<div style="font-size:11px;color:var(--mu);margin-top:2px">اضغط تسجيل، اقرأ الذكر، ثم إيقاف وحفظ</div></div>'
    +'<span style="font-size:12px;font-weight:900;color:'+(done===items.length?'var(--g)':'var(--tl)')+'">'+arNum(done)+'/'+arNum(items.length)+'</span>'
   +'</div>'
-  +'<div style="padding:10px 12px 0;display:flex;gap:6px">'+tabBtn('sabah','🌅 الصباح')+tabBtn('masa','🌙 المساء')+'</div>'
+  +'<div style="padding:10px 12px 0;display:flex;flex-wrap:wrap;gap:6px">'+VREC_CATS.map(function(c){return tabBtn(c,vCatIc(c)+' '+vCatShort(c));}).join('')+'</div>'
   +'<div class="spgb">'
    +(vRec?'<div class="notice" style="margin-bottom:10px">⏺ التسجيل جارٍ… تحدّث ثم اضغط «إيقاف وحفظ»</div>':'')
    +rows
