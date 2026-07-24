@@ -328,8 +328,21 @@ class MainActivity : android.app.Activity() {
         lastFull = full
         try {
             val w = window ?: return
-            if (full) w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            else w.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            if (Build.VERSION.SDK_INT >= 28) {
+                w.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+            if (full) {
+                w.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                w.decorView.systemUiVisibility = (android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or android.view.View.SYSTEM_UI_FLAG_FULLSCREEN)
+            } else {
+                w.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                w.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
+            }
         } catch (_: Exception) {}
         try {
             getSharedPreferences("mtb_ui", Context.MODE_PRIVATE)
