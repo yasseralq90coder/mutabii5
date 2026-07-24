@@ -17,7 +17,7 @@ import android.os.Build
 import android.os.Bundle
 import android.service.media.MediaBrowserService
 
-class MediaService : MediaBrowserService(), AudioManager.OnAudioFocusChangeListener {
+class MediaService : MediaBrowserService() {
 
     companion object {
         const val ACT_UPDATE = "com.mutabii.app.M_UPDATE"
@@ -45,17 +45,14 @@ class MediaService : MediaBrowserService(), AudioManager.OnAudioFocusChangeListe
 
     private var session: MediaSession? = null
     private var inForeground = false
-    private var audioManager: AudioManager? = null
-    private var hasAudioFocus = false
 
     override fun onCreate() {
         super.onCreate()
         Notif.ensure(this)
-        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager?
         
         val s = MediaSession(this, "MutabiiQuran")
         s.setCallback(object : MediaSession.Callback() {
-            override fun onPlay() { requestFocusAndPlay() }
+            override fun onPlay() { WebHolder.cmd("play") }
             override fun onPause() { WebHolder.cmd("pause") }
             override fun onStop() { WebHolder.cmd("stop") }
             override fun onSkipToNext() { WebHolder.cmd("next") }
@@ -65,11 +62,11 @@ class MediaService : MediaBrowserService(), AudioManager.OnAudioFocusChangeListe
             override fun onSeekTo(pos: Long) { WebHolder.cmd("seek", pos.toString()) }
             override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
                 if (mediaId == "resume_khatma") {
-                    requestFocusAndPlayCmd("resumekhatma")
+                    WebHolder.cmd("resumekhatma", "0")
                     return
                 }
                 val n = mediaId?.removePrefix("surah_")?.toIntOrNull() ?: return
-                requestFocusAndPlayCmd("playsurah", n.toString())
+                WebHolder.cmd("playsurah", n.toString())
             }
         })
         s.setSessionActivity(
@@ -82,45 +79,11 @@ class MediaService : MediaBrowserService(), AudioManager.OnAudioFocusChangeListe
         session = s
         sessionToken = s.sessionToken
     }
-    
-    private fun requestFocusAndPlay() {
-        requestAudioFocus()
-        WebHolder.cmd("play")
-    }
-    
-    private fun requestFocusAndPlayCmd(cmd: String, arg: String = "0") {
-        requestAudioFocus()
-        WebHolder.cmd(cmd, arg)
-    }
-    
-    private fun requestAudioFocus() {
-        if (!hasAudioFocus) {
-            val result = audioManager?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
-            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                hasAudioFocus = true
-            }
-        }
-    }
-    
-    override fun onAudioFocusChange(focusChange: Int) {
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                WebHolder.cmd("pause")
-                hasAudioFocus = false
-            }
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                if (!hasAudioFocus) {
-                    WebHolder.cmd("play")
-                    hasAudioFocus = true
-                }
-            }
-        }
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACT_STOP -> { WebHolder.cmd("stop"); shutdown(); return START_NOT_STICKY }
-            ACT_PLAY -> requestFocusAndPlay()
+            ACT_PLAY -> WebHolder.cmd("play")
             ACT_PAUSE -> WebHolder.cmd("pause")
             ACT_NEXT -> WebHolder.cmd("next")
             ACT_PREV -> WebHolder.cmd("prev")
@@ -133,10 +96,7 @@ class MediaService : MediaBrowserService(), AudioManager.OnAudioFocusChangeListe
         val s = session ?: return
         if (MediaState.surah <= 0) { shutdown(); return }
 
-        // If it starts playing without our direct command, grab focus
-        if (MediaState.playing) {
-            requestAudioFocus()
-        }
+        // If it starts playing without our direct command, focus is handled by WebView automatically
 
         s.setMetadata(
             MediaMetadata.Builder()
@@ -235,20 +195,12 @@ class MediaService : MediaBrowserService(), AudioManager.OnAudioFocusChangeListe
         } catch (_: Exception) {}
         try { stopForeground(Service.STOP_FOREGROUND_REMOVE) } catch (_: Exception) {}
         inForeground = false
-        if (hasAudioFocus) {
-            audioManager?.abandonAudioFocus(this)
-            hasAudioFocus = false
-        }
         stopSelf()
     }
 
     override fun onDestroy() {
         try { session?.isActive = false; session?.release() } catch (_: Exception) {}
         session = null
-        if (hasAudioFocus) {
-            audioManager?.abandonAudioFocus(this)
-            hasAudioFocus = false
-        }
         super.onDestroy()
     }
 
