@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.media.AudioManager
 import android.media.MediaDescription
 import android.media.MediaMetadata
 import android.media.browse.MediaBrowser
@@ -16,8 +17,7 @@ import android.os.Build
 import android.os.Bundle
 import android.service.media.MediaBrowserService
 
-/** مشغّل القرآن: شريط في الإشعارات + شاشة القفل + أندرويد أوتو. */
-class MediaService : MediaBrowserService() {
+class MediaService : MediaBrowserService(), AudioManager.OnAudioFocusChangeListener {
 
     companion object {
         const val ACT_UPDATE = "com.mutabii.app.M_UPDATE"
@@ -45,13 +45,17 @@ class MediaService : MediaBrowserService() {
 
     private var session: MediaSession? = null
     private var inForeground = false
+    private var audioManager: AudioManager? = null
+    private var hasAudioFocus = false
 
     override fun onCreate() {
         super.onCreate()
         Notif.ensure(this)
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager?
+        
         val s = MediaSession(this, "MutabiiQuran")
         s.setCallback(object : MediaSession.Callback() {
-            override fun onPlay() { WebHolder.cmd("play") }
+            override fun onPlay() { requestFocusAndPlay() }
             override fun onPause() { WebHolder.cmd("pause") }
             override fun onStop() { WebHolder.cmd("stop") }
             override fun onSkipToNext() { WebHolder.cmd("next") }
@@ -60,8 +64,12 @@ class MediaService : MediaBrowserService() {
             override fun onRewind() { WebHolder.cmd("rw", "10") }
             override fun onSeekTo(pos: Long) { WebHolder.cmd("seek", pos.toString()) }
             override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+                if (mediaId == "resume_khatma") {
+                    requestFocusAndPlayCmd("resumekhatma")
+                    return
+                }
                 val n = mediaId?.removePrefix("surah_")?.toIntOrNull() ?: return
-                WebHolder.cmd("playsurah", n.toString())
+                requestFocusAndPlayCmd("playsurah", n.toString())
             }
         })
         s.setSessionActivity(
@@ -74,11 +82,45 @@ class MediaService : MediaBrowserService() {
         session = s
         sessionToken = s.sessionToken
     }
+    
+    private fun requestFocusAndPlay() {
+        requestAudioFocus()
+        WebHolder.cmd("play")
+    }
+    
+    private fun requestFocusAndPlayCmd(cmd: String, arg: String = "0") {
+        requestAudioFocus()
+        WebHolder.cmd(cmd, arg)
+    }
+    
+    private fun requestAudioFocus() {
+        if (!hasAudioFocus) {
+            val result = audioManager?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                hasAudioFocus = true
+            }
+        }
+    }
+    
+    override fun onAudioFocusChange(focusChange: Int) {
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                WebHolder.cmd("pause")
+                hasAudioFocus = false
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                if (!hasAudioFocus) {
+                    WebHolder.cmd("play")
+                    hasAudioFocus = true
+                }
+            }
+        }
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACT_STOP -> { WebHolder.cmd("stop"); shutdown(); return START_NOT_STICKY }
-            ACT_PLAY -> WebHolder.cmd("play")
+            ACT_PLAY -> requestFocusAndPlay()
             ACT_PAUSE -> WebHolder.cmd("pause")
             ACT_NEXT -> WebHolder.cmd("next")
             ACT_PREV -> WebHolder.cmd("prev")
@@ -90,6 +132,11 @@ class MediaService : MediaBrowserService() {
     private fun refresh() {
         val s = session ?: return
         if (MediaState.surah <= 0) { shutdown(); return }
+
+        // If it starts playing without our direct command, grab focus
+        if (MediaState.playing) {
+            requestAudioFocus()
+        }
 
         s.setMetadata(
             MediaMetadata.Builder()
@@ -122,8 +169,6 @@ class MediaService : MediaBrowserService() {
         )
 
         val n = buildNotif(s)
-        // إلزامي: بعد startForegroundService يجب استدعاء startForeground خلال ٥ ثوانٍ
-        // وإلا انهار التطبيق (ForegroundServiceDidNotStartInTime) — حتى لو كان متوقفاً مؤقتاً.
         if (!inForeground) {
             try {
                 if (Build.VERSION.SDK_INT >= 29)
@@ -134,7 +179,6 @@ class MediaService : MediaBrowserService() {
         } else {
             notifyOnly(n)
         }
-        // عند الإيقاف المؤقت: أبقِ الإشعار ظاهراً لكن افصل الخدمة عن الواجهة الأمامية
         if (!MediaState.playing && inForeground) {
             try { stopForeground(Service.STOP_FOREGROUND_DETACH) } catch (_: Exception) {}
             inForeground = false
@@ -191,16 +235,23 @@ class MediaService : MediaBrowserService() {
         } catch (_: Exception) {}
         try { stopForeground(Service.STOP_FOREGROUND_REMOVE) } catch (_: Exception) {}
         inForeground = false
+        if (hasAudioFocus) {
+            audioManager?.abandonAudioFocus(this)
+            hasAudioFocus = false
+        }
         stopSelf()
     }
 
     override fun onDestroy() {
         try { session?.isActive = false; session?.release() } catch (_: Exception) {}
         session = null
+        if (hasAudioFocus) {
+            audioManager?.abandonAudioFocus(this)
+            hasAudioFocus = false
+        }
         super.onDestroy()
     }
 
-    // ===== أندرويد أوتو =====
     override fun onGetRoot(
         clientPackageName: String, clientUid: Int, rootHints: Bundle?
     ): BrowserRoot = BrowserRoot(ROOT, null)
@@ -211,6 +262,16 @@ class MediaService : MediaBrowserService() {
         val items = ArrayList<MediaBrowser.MediaItem>()
         try {
             if (parentId == ROOT) {
+                items.add(
+                    MediaBrowser.MediaItem(
+                        MediaDescription.Builder()
+                            .setMediaId("resume_khatma")
+                            .setTitle("إكمال الختمة السماعية")
+                            .setSubtitle("متابعة الاستماع من حيث توقفت")
+                            .build(),
+                        MediaBrowser.MediaItem.FLAG_PLAYABLE
+                    )
+                )
                 items.add(
                     MediaBrowser.MediaItem(
                         MediaDescription.Builder()
