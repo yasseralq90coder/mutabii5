@@ -687,6 +687,72 @@ const DHIKRS=[
  {id:'d12',s:'التسبيحتان',t:'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ',b:'حبيبتان إلى الرحمن',r:'البخاري'},
 ];
 
+/* ═══════════════ الأدعية السياقية — نظام يفهم الوقت والحركة والمكان ═══════════════
+   كل النصوص ثابتة صحيحة على منهج أهل السنة والجماعة، مخرَّجة من الصحيحين وحصن المسلم.
+   البنية كبنية الأذكار: {id,n(اسم),t(نص),c(عدد),r(تخريج)} ليعمل معها محرّك الصوت نفسه. */
+const ADK_SLEEP=[
+ {id:'sl1',n:'قراءة المعوذات والنفث',t:'يجمع كفّيه ثم ينفث فيهما ويقرأ: '+IKHLAS+' ۞ '+FALAQ+' ۞ '+NAS+' ثم يمسح بهما ما استطاع من جسده، يبدأ برأسه ووجهه — ثلاث مرات.',c:3,r:'البخاري'},
+ {id:'sl2',n:'آية الكرسي',t:KURSI,c:1,r:'البخاري — لم يزل عليك من الله حافظ ولا يقربك شيطان حتى تصبح'},
+ {id:'sl3',n:'خواتيم سورة البقرة',t:'آمَنَ الرَّسُولُ بِمَا أُنزِلَ إِلَيْهِ مِن رَّبِّهِ وَالْمُؤْمِنُونَ… (الآيتان ٢٨٥–٢٨٦ من سورة البقرة)',c:1,r:'متفق عليه — من قرأهما في ليلة كفتاه'},
+ {id:'sl4',n:'باسمك ربي وضعت جنبي',t:'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي، وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ',c:1,r:'متفق عليه'},
+ {id:'sl5',n:'اللهم أسلمت نفسي إليك',t:'اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَوَجَّهْتُ وَجْهِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ، رَغْبَةً وَرَهْبَةً إِلَيْكَ، لَا مَلْجَأَ وَلَا مَنْجَا مِنْكَ إِلَّا إِلَيْكَ، آمَنْتُ بِكِتَابِكَ الَّذِي أَنْزَلْتَ، وَبِنَبِيِّكَ الَّذِي أَرْسَلْتَ',c:1,r:'متفق عليه — فإن مِتَّ مِتَّ على الفطرة'},
+ {id:'sl6',n:'التسبيح عند النوم',t:'سُبْحَانَ اللَّهِ (٣٣) وَالْحَمْدُ لِلَّهِ (٣٣) وَاللَّهُ أَكْبَرُ (٣٤)',c:1,r:'متفق عليه — خيرٌ لكما من خادم'},
+ {id:'sl7',n:'اللهم قني عذابك',t:'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ',c:3,r:'أبو داود'},
+ {id:'sl8',n:'باسمك اللهم أموت وأحيا',t:'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',c:1,r:'البخاري'},
+ {id:'sl9',n:'دعاء الفراش',t:'اللَّهُمَّ رَبَّ السَّمَاوَاتِ وَرَبَّ الْأَرْضِ وَرَبَّ الْعَرْشِ الْعَظِيمِ، رَبَّنَا وَرَبَّ كُلِّ شَيْءٍ… أَعُوذُ بِكَ مِنْ شَرِّ كُلِّ شَيْءٍ أَنْتَ آخِذٌ بِنَاصِيَتِهِ، اللَّهُمَّ أَنْتَ الْأَوَّلُ فَلَيْسَ قَبْلَكَ شَيْءٌ، وَأَنْتَ الْآخِرُ فَلَيْسَ بَعْدَكَ شَيْءٌ، وَأَنْتَ الظَّاهِرُ فَلَيْسَ فَوْقَكَ شَيْءٌ، وَأَنْتَ الْبَاطِنُ فَلَيْسَ دُونَكَ شَيْءٌ، اقْضِ عَنَّا الدَّيْنَ وَأَغْنِنَا مِنَ الْفَقْرِ',c:1,r:'مسلم'},
+];
+const ADK_WAKE=[
+ {id:'wk1',n:'الحمد لله الذي أحيانا',t:'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',c:1,r:'البخاري'},
+ {id:'wk2',n:'دعاء التقلب في الليل',t:'لَا إِلَهَ إِلَّا اللَّهُ الْوَاحِدُ الْقَهَّارُ، رَبُّ السَّمَاوَاتِ وَالْأَرْضِ وَمَا بَيْنَهُمَا الْعَزِيزُ الْغَفَّارُ',c:1,r:'الحاكم — من تعارّ من الليل'},
+ {id:'wk3',n:'آخر آيات آل عمران',t:'إِنَّ فِي خَلْقِ السَّمَاوَاتِ وَالْأَرْضِ وَاخْتِلَافِ اللَّيْلِ وَالنَّهَارِ لَآيَاتٍ لِأُولِي الْأَلْبَابِ… (الآيات من آخر سورة آل عمران ١٩٠–٢٠٠)',c:1,r:'متفق عليه — كان ﷺ يقرؤها إذا استيقظ'},
+];
+const ADK_TRAVEL=[
+ {id:'tr1',n:'دعاء الركوب',t:'بِسْمِ اللَّهِ… الْحَمْدُ لِلَّهِ، سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ، وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ، الْحَمْدُ لِلَّهِ، الْحَمْدُ لِلَّهِ، الْحَمْدُ لِلَّهِ، اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، سُبْحَانَكَ اللَّهُمَّ إِنِّي ظَلَمْتُ نَفْسِي فَاغْفِرْ لِي، فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ',c:1,r:'أبو داود والترمذي — صحيح'},
+ {id:'tr2',n:'دعاء السفر',t:'اللَّهُمَّ إِنَّا نَسْأَلُكَ فِي سَفَرِنَا هَذَا الْبِرَّ وَالتَّقْوَى، وَمِنَ الْعَمَلِ مَا تَرْضَى، اللَّهُمَّ هَوِّنْ عَلَيْنَا سَفَرَنَا هَذَا وَاطْوِ عَنَّا بُعْدَهُ، اللَّهُمَّ أَنْتَ الصَّاحِبُ فِي السَّفَرِ وَالْخَلِيفَةُ فِي الْأَهْلِ، اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ وَعْثَاءِ السَّفَرِ، وَكَآبَةِ الْمَنْظَرِ، وَسُوءِ الْمُنْقَلَبِ فِي الْمَالِ وَالْأَهْلِ',c:1,r:'مسلم'},
+ {id:'tr3',n:'التعوذ الجامع',t:'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ',c:3,r:'مسلم — من نزل منزلاً لم يضره شيء حتى يرتحل'},
+ {id:'tr4',n:'دعاء ركوب الدابة والمركب',t:'بِسْمِ اللَّهِ مَجْرَاهَا وَمُرْسَاهَا، إِنَّ رَبِّي لَغَفُورٌ رَحِيمٌ، وَمَا قَدَرُوا اللَّهَ حَقَّ قَدْرِهِ',c:1,r:'ثابت في القرآن — هود ٤١'},
+ {id:'tr5',n:'التكبير عند الصعود والتسبيح عند النزول',t:'إِذَا عَلَوْتَ ثَنِيَّةً أَوْ مُرْتَفَعًا فَكَبِّرْ: اللَّهُ أَكْبَرُ، وَإِذَا هَبَطْتَ وَادِيًا فَسَبِّحْ: سُبْحَانَ اللَّهِ',c:1,r:'البخاري'},
+ {id:'tr6',n:'ذكر السفر الجامع',t:'آيِبُونَ تَائِبُونَ عَابِدُونَ لِرَبِّنَا حَامِدُونَ. سُبْحَانَ اللَّهِ، وَالْحَمْدُ لِلَّهِ، وَلَا إِلَهَ إِلَّا اللَّهُ، وَاللَّهُ أَكْبَرُ',c:1,r:'مسلم'},
+ {id:'tr7',n:'لا حول ولا قوة',t:'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ، الْعَلِيِّ الْعَظِيمِ',c:10,r:'متفق عليه — كنز من كنوز الجنة'},
+ {id:'tr8',n:'الاستغفار',t:'أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ',c:33,r:'البخاري ومسلم'},
+];
+const ADK_JUMUA=[
+ {id:'jm1',n:'الإكثار من الصلاة على النبي ﷺ',t:'اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ، وَعَلَى آلِهِ وَصَحْبِهِ أَجْمَعِينَ',c:10,r:'أبو داود — أكثروا عليّ من الصلاة يوم الجمعة'},
+ {id:'jm2',n:'الدعاء الجامع للدنيا والآخرة',t:'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',c:3,r:'البخاري — كان أكثر دعائه ﷺ'},
+ {id:'jm3',n:'سؤال الجنة والاستعاذة من النار',t:'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْجَنَّةَ وَأَعُوذُ بِكَ مِنَ النَّارِ',c:3,r:'أبو داود'},
+ {id:'jm4',n:'الإعانة على الذكر',t:'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ',c:1,r:'أبو داود'},
+ {id:'jm5',n:'طلب الهداية والتقوى',t:'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى',c:3,r:'مسلم'},
+ {id:'jm6',n:'صلاح الدين والدنيا والآخرة',t:'اللَّهُمَّ أَصْلِحْ لِي دِينِي الَّذِي هُوَ عِصْمَةُ أَمْرِي، وَأَصْلِحْ لِي دُنْيَايَ الَّتِي فِيهَا مَعَاشِي، وَأَصْلِحْ لِي آخِرَتِي الَّتِي فِيهَا مَعَادِي، وَاجْعَلِ الْحَيَاةَ زِيَادَةً لِي فِي كُلِّ خَيْرٍ، وَاجْعَلِ الْمَوْتَ رَاحَةً لِي مِنْ كُلِّ شَرٍّ',c:1,r:'مسلم'},
+ {id:'jm7',n:'الثبات على الدين',t:'يَا مُقَلِّبَ الْقُلُوبِ ثَبِّتْ قَلْبِي عَلَى دِينِكَ',c:3,r:'الترمذي — صحيح'},
+ {id:'jm8',n:'خير ما سأل النبي ﷺ',t:'اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ خَيْرِ مَا سَأَلَكَ عَبْدُكَ وَنَبِيُّكَ مُحَمَّدٌ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا عَاذَ بِهِ عَبْدُكَ وَنَبِيُّكَ مُحَمَّدٌ',c:1,r:'الترمذي — صحيح'},
+ {id:'jm9',n:'المغفرة والرحمة',t:'رَبِّ اغْفِرْ لِي وَتُبْ عَلَيَّ، إِنَّكَ أَنْتَ التَّوَّابُ الرَّحِيمُ',c:3,r:'أبو داود والترمذي'},
+ {id:'jm10',n:'حسن الخاتمة والتوكل',t:'حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ، وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ',c:7,r:'أبو داود'},
+];
+/* أدعية يومية قصيرة حسب الحاجة — تُعرض كبطاقات سريعة، صحيحة مخرّجة */
+const ADK_QUICK=[
+ {id:'q_home_in',n:'دخول المنزل',t:'بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى اللَّهِ رَبِّنَا تَوَكَّلْنَا (ثم يسلّم على أهله)',c:1,r:'أبو داود'},
+ {id:'q_home_out',n:'الخروج من المنزل',t:'بِسْمِ اللَّهِ، تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ',c:1,r:'أبو داود والترمذي — كُفيت ووُقيت'},
+ {id:'q_masjid_in',n:'دخول المسجد',t:'أَعُوذُ بِاللَّهِ الْعَظِيمِ، وَبِوَجْهِهِ الْكَرِيمِ، وَسُلْطَانِهِ الْقَدِيمِ، مِنَ الشَّيْطَانِ الرَّجِيمِ. اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ',c:1,r:'مسلم وأبو داود'},
+ {id:'q_masjid_out',n:'الخروج من المسجد',t:'بِسْمِ اللَّهِ وَالصَّلَاةُ وَالسَّلَامُ عَلَى رَسُولِ اللَّهِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ، اللَّهُمَّ اعْصِمْنِي مِنَ الشَّيْطَانِ الرَّجِيمِ',c:1,r:'مسلم وابن ماجه'},
+ {id:'q_food_before',n:'قبل الطعام',t:'بِسْمِ اللَّهِ (فإن نسيت في أوله فقل: بِسْمِ اللَّهِ أَوَّلَهُ وَآخِرَهُ)',c:1,r:'أبو داود والترمذي'},
+ {id:'q_food_after',n:'بعد الطعام',t:'الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنِي هَذَا وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ',c:1,r:'أبو داود والترمذي — غُفر له ما تقدّم من ذنبه'},
+ {id:'q_wc_in',n:'دخول الخلاء',t:'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ',c:1,r:'متفق عليه'},
+ {id:'q_wc_out',n:'الخروج من الخلاء',t:'غُفْرَانَكَ',c:1,r:'أبو داود والترمذي'},
+ {id:'q_distress',n:'الهمّ والكرب',t:'لَا إِلَهَ إِلَّا اللَّهُ الْعَظِيمُ الْحَلِيمُ، لَا إِلَهَ إِلَّا اللَّهُ رَبُّ الْعَرْشِ الْعَظِيمِ، لَا إِلَهَ إِلَّا اللَّهُ رَبُّ السَّمَاوَاتِ وَرَبُّ الْأَرْضِ وَرَبُّ الْعَرْشِ الْكَرِيمِ',c:1,r:'متفق عليه'},
+];
+/* سجلّ فئات الأدعية — يقرؤه محرّك الصوت والعرض بلا تكرار.
+   tracked: تُحسب في تقدّم اليوم (adhkarDone) كالصباح/المساء؛ غيرها تُقرأ عند الحاجة. */
+const DUACATS={
+ sabah:{list:ADK_SABAH,name:'أذكار الصباح',ic:'🌅',tracked:true},
+ masa:{list:ADK_MASA,name:'أذكار المساء',ic:'🌇',tracked:true},
+ sleep:{list:ADK_SLEEP,name:'أذكار النوم',ic:'🌙',tracked:false},
+ wake:{list:ADK_WAKE,name:'أذكار الاستيقاظ',ic:'☀️',tracked:false},
+ travel:{list:ADK_TRAVEL,name:'أدعية السفر والركوب',ic:'🚗',tracked:false},
+ jumua:{list:ADK_JUMUA,name:'ساعة إجابة الجمعة',ic:'🤲',tracked:false},
+};
+function duaList(cat){return (DUACATS[cat]||{}).list||[];}
+function duaCatName(cat){return (DUACATS[cat]||{}).name||'';}
+
 /* ═══════════════ حساب أوقات الصلاة ═══════════════ */
 function jDay(y,m,d){if(m<=2){y--;m+=12;}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5;}
 function ishaH(date){try{if(new Intl.DateTimeFormat('en-u-ca-islamic-umalqura',{month:'numeric'}).format(date)==='9')return 2;}catch(e){}return 1.5;}
@@ -1531,6 +1597,30 @@ function virtuousTime(){
    كل نافذة هنا فرصة شرعية لها وقت إغلاق حقيقي، والعدّاد يجعل فواتها محسوساً —
    وهذا أدعى للعمل من تأنيب على ما مضى. النافذة الأولى المطابقة تفوز، فالترتيب أدناه
    هو ترتيب الأولوية: الأقصر وقتاً والأشد فوتاً أولاً. */
+/* ═══════════════ السياق: السيارة والسفر ═══════════════
+   «في السيارة» يُكشف بإشارتين: اتصال أندرويد أوتو (تلقائي عبر الطبقة الأصلية)،
+   أو زر يدوي «أنا مسافر/أقود». عند الدخول تُقرأ أدعية الركوب صوتياً بلا لمس. */
+let _carAuto=false;                 /* اتصال أندرويد أوتو الفعلي */
+let _carLastPlay=0;
+function duaAutoVoice(){return data.duaAuto!==false;}   /* افتراضي مُفعّل */
+function duaCarOn(){return _carAuto||!!(data&&data.duaCarManual);}
+function _duaTravelPlay(){
+ if(!duaAutoVoice())return;
+ if(Date.now()-_carLastPlay<120000)return;   /* لا تُعِد التشغيل خلال دقيقتين */
+ _carLastPlay=Date.now();
+ try{attsStart('travel');}catch(e){}
+}
+function duaSetCar(on){
+ const was=duaCarOn();_carAuto=!!on;const nowOn=duaCarOn();
+ if(nowOn&&!was){ _duaTravelPlay(); toast('🚗 أدعية السفر والركوب — استمِع وأنت تقود','ok'); if(ui.tab==='today')render(); }
+ else if(!nowOn&&was){ if(atts&&atts.cat==='travel')try{attsStop(true);}catch(e){} if(ui.tab==='today')render(); }
+}
+function duaToggleCarManual(){
+ data.duaCarManual=!data.duaCarManual;save();
+ if(data.duaCarManual){ toast('🚗 وضع السيارة مُفعّل — أدعية الركوب','ok'); _duaTravelPlay(); }
+ else{ toast('🚗 أُطفئ وضع السيارة','warn'); if(atts&&atts.cat==='travel'&&!_carAuto)try{attsStop(true);}catch(e){} }
+ render();
+}
 function nowWindow(){
  if(!times||!times.fajr)return null;
  const now=new Date(),nowS=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
@@ -1539,6 +1629,10 @@ function nowWindow(){
  if(F>=99999||D>=99999||M>=99999)return null;
  const rec=getRec(TODAY),ad=rec.adhkarDone||{},sn=rec.sunnah||{},pray=rec.p||[];
  const dow=now.getDay(),W=[];
+ /* ٠ — السيارة (أعلى أولوية): بطاقة استماع لأدعية السفر ما دمتَ متصلاً */
+ if(duaCarOn())W.push({id:'car',from:0,to:86399,ic:'🚗',nm:'أدعية السفر والركوب',
+  fd:'أنت في السيارة — استمع لدعاء الركوب ودعاء السفر بصوتك أو بقارئ الجهاز',
+  act:'data-act="dualisten" data-cat="travel"',btn:'🔊 استمع لأدعية الركوب',tone:'go'});
  /* يدعم النوافذ التي تعبر منتصف الليل (الثلث الأخير، الوتر) */
  const add=function(o){
   const inw=o.from<=o.to?(nowS>=o.from&&nowS<o.to):(nowS>=o.from||nowS<o.to);
@@ -1565,10 +1659,10 @@ function nowWindow(){
  add({id:'ishraq',from:F,to:SR,ic:'🌅',nm:'وقت الإشراق',
   fd:'من صلى الفجر ثم قعد يذكر الله حتى تطلع الشمس ثم صلى ركعتين — كُتبت له كأجر حجة وعمرة تامة',
   act:'data-act="goadhkar" data-cat="sabah"',btn:'ابدأ أذكار الصباح',tone:'go'});
- /* ٤ — ساعة الإجابة يوم الجمعة */
+ /* ٤ — ساعة الإجابة يوم الجمعة: قائمة أدعية جامعة صوتية */
  if(dow===5)add({id:'saah',from:A,to:M,ic:'🤲',nm:'آخر ساعة من الجمعة',
-  fd:'ساعة لا يوافقها عبد مسلم يسأل الله شيئاً إلا أعطاه إياه — ألِحّ في الدعاء',
-  act:'data-act="godhikr"',btn:'افتح الدعاء',tone:'tl'});
+  fd:'ساعة لا يوافقها عبد مسلم يسأل الله شيئاً إلا أعطاه إياه — ألِحّ بهذه الأدعية الجامعة',
+  act:'data-act="dualisten" data-cat="jumua"',btn:'🔊 استمع لأدعية الساعة',tone:'tl'});
  /* ٥ — الكهف يوم الجمعة */
  if(dow===5&&!rec.kahf)add({id:'kahf',from:F,to:M,ic:'🌟',nm:'سورة الكهف',
   fd:'من قرأ سورة الكهف يوم الجمعة أضاء له من النور ما بين الجمعتين',
@@ -1590,6 +1684,10 @@ function nowWindow(){
  if(!sn.wt)add({id:'witr',from:I,to:F,ic:'🌙',nm:'الوتر',
   fd:'أوتروا يا أهل القرآن — اجعل آخر صلاتك من الليل وتراً',
   act:'data-act="togsun" data-key="wt"',btn:'سجّل الوتر',tone:'tl'});
+ /* ٩ — أذكار النوم: من العشاء حتى الفجر — استماع بلا لمس قبل النوم */
+ add({id:'sleep',from:I+3600,to:F,ic:'🌙',nm:'أذكار النوم',
+  fd:'حصّن ليلتك — آية الكرسي وخواتيم البقرة والمعوذات وأذكار الفراش، تُقرأ عليك صوتياً',
+  act:'data-act="dualisten" data-cat="sleep"',btn:'🔊 استمع لأذكار النوم',tone:'tl'});
  return W.length?W[0]:null;
 }
 function nowCard(){
@@ -1610,6 +1708,48 @@ function nowCard(){
  +'<div style="font-size:13px;line-height:1.95;color:var(--mu);margin-bottom:12px">'+w.fd+'</div>'
  +'<button '+w.act+' style="width:100%;padding:13px;border-radius:12px;background:'+c+';color:#1a1410;font-size:15px;font-weight:900">'+w.btn+'</button>'
  +'</div>';
+}
+/* بطاقة الأدعية السياقية: زر السيارة + استماع سريع لكل فئة + أدعية يومية */
+function duaContextCard(){
+ const car=duaCarOn();
+ const isFri=new Date().getDay()===5;
+ const chip=function(cat,ic,label){
+  return '<button data-act="dualisten" data-cat="'+cat+'" style="flex:1 1 30%;min-width:96px;padding:11px 8px;border-radius:12px;border:1px solid var(--gbr);background:rgba(201,164,76,.06);color:var(--go);font-size:12px;font-weight:800">'+ic+' '+label+'</button>';
+ };
+ let chips=chip('sleep','🌙','النوم')+chip('wake','☀️','الاستيقاظ')+chip('travel','🚗','السفر');
+ if(isFri)chips+=chip('jumua','🤲','الجمعة');
+ chips+=chip('sabah','🌅','الصباح')+chip('masa','🌇','المساء');
+ return '<div class="stit"><span class="si">🤲</span>أدعية بحسب حالك</div>'
+ +'<div class="cb" style="margin:0 13px">'
+ +'<button data-act="duacar" style="width:100%;padding:12px;border-radius:12px;margin-bottom:9px;border:1px solid '+(car?'var(--g)':'var(--br)')+';background:'+(car?'rgba(107,147,98,.12)':'rgba(42,33,22,.55)')+';color:'+(car?'var(--g)':'var(--tx)')+';font-size:14px;font-weight:900">'+(car?'🚗 وضع السيارة مُفعّل — اضغط للإيقاف':'🚗 أنا في السيارة / مسافر — تشغيل أدعية الركوب')+'</button>'
+ +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px">'+chips+'</div>'
+ +'<button data-act="duaquick" style="width:100%;padding:10px;border-radius:11px;border:1px dashed var(--br);background:none;color:var(--mu);font-size:12px;font-weight:700">📖 أدعية يومية سريعة (المنزل، المسجد، الطعام…)</button>'
+ +'<div style="font-size:10px;color:var(--mu);text-align:center;margin-top:8px">تُقرأ بصوتك المسجَّل إن وُجد، وإلا بقارئ الجهاز. كل النصوص صحيحة على منهج السلف.</div>'
+ +'</div>';
+}
+/* أدعية يومية قصيرة — نافذة عرض */
+function duaQuickModal(){
+ const rows=ADK_QUICK.map(function(it){
+  return '<div class="cb" style="padding:12px;margin-bottom:8px">'
+   +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px"><div style="font-size:13px;font-weight:800;color:var(--go)">'+escH(it.n)+'</div>'
+   +'<button data-act="duasay" data-cat="quick" data-id="'+it.id+'" style="flex:0 0 auto;padding:6px 12px;border-radius:9px;border:1px solid var(--gbr);background:rgba(201,164,76,.08);color:var(--go);font-size:12px;font-weight:800">🔊 استمع</button></div>'
+   +'<div class="arab" style="font-size:15px;line-height:2.1;color:var(--tx)">'+escH(it.t)+'</div>'
+   +'<div style="font-size:10px;color:var(--mu);margin-top:5px">'+escH(it.r)+'</div></div>';
+ }).join('');
+ modalHTML='<div class="mbox" style="max-height:80vh;overflow-y:auto">'
+  +'<div style="text-align:center;margin-bottom:12px"><div style="font-size:24px">📖</div><div style="font-size:16px;font-weight:900;color:var(--go);margin-top:2px">أدعية يومية سريعة</div></div>'
+  +rows
+  +'<button data-act="closemodal" class="bgo" style="width:100%;padding:12px;font-size:14px;margin-top:4px">✓ تم</button></div>';
+ render();
+}
+/* نطق دعاء واحد فوراً (للأدعية السريعة) */
+function duaSayOne(cat,id){
+ const list=cat==='quick'?ADK_QUICK:duaList(cat);
+ const it=list.find(function(x){return x.id===id;});if(!it)return;
+ if(!vCanListen()){toast('⚠️ جهازك لا يدعم النطق — أو سجّل صوتك','err');return;}
+ ttsCancel();ttsWakeOn();
+ try{if(typeof pauseAudio==='function')pauseAudio();}catch(e){}
+ sayItem(it,cat,function(){ttsWakeOff();});
 }
 /* العدّاد الحيّ — يُستدعى كل ثانية من updateClock، ويعيد الرسم مرة واحدة عند الإغلاق */
 function nwTick(){
@@ -2118,6 +2258,17 @@ function homeNudgeBanner(){
   +'<span style="font-size:16px;color:'+it.c+'">›</span></div>';
  }).join('');
 }
+/* السنن الرواتب لليوم — يوم الجمعة: لا سنة قبلية للظهر (الجمعة)، والبعدية سنة جمعة */
+function sunnahItemsToday(rec){
+ const isFri=new Date().getDay()===5;
+ const done=rec.sunnah||{};
+ return SUNNAH.filter(function(x){return !(isFri&&x.k==='qD');}).map(function(x){
+  const d=!!done[x.k];
+  let nm=x.n,nt=x.nt;
+  if(isFri&&x.k==='bD'){nm='سنة الجمعة البعدية';nt='ركعتان (أو أربع في المسجد)';}
+  return '<div class="si'+(d?' dn':'')+'" data-act="togsun" data-key="'+x.k+'"><span style="font-size:17px">'+(d?'✅':'⬜')+'</span><div><div style="font-size:14px;font-weight:700;color:'+(d?'var(--g)':'var(--tx)')+'">'+nm+'</div><div style="font-size:11px;color:var(--mu)">'+nt+'</div></div></div>';
+ }).join('');
+}
 function renderToday(){
  if(ui.selDate!==TODAY)return renderTodayClassic();
  const rec=getRec(TODAY);
@@ -2194,7 +2345,8 @@ ui._kun='';
  +duo
  +missNote
  +dayThread(rec)
- +'<div style="margin:12px 13px 0">'+sect('sunT','📿','السنن الرواتب — اليوم كاملاً','<div class="sg">'+SUNNAH.map(function(x){const d=!!(rec.sunnah||{})[x.k];return '<div class="si'+(d?' dn':'')+'" data-act="togsun" data-key="'+x.k+'"><span style="font-size:17px">'+(d?'✅':'⬜')+'</span><div><div style="font-size:14px;font-weight:700;color:'+(d?'var(--g)':'var(--tx)')+'">'+x.n+'</div><div style="font-size:11px;color:var(--mu)">'+x.nt+'</div></div></div>';}).join('')+'</div>')+'</div>'
+ +'<div style="margin:12px 13px 0">'+sect('sunT','📿','السنن الرواتب — اليوم كاملاً','<div class="sg">'+sunnahItemsToday(rec)+'</div>')+'</div>'
+ +'<div style="margin-top:12px">'+duaContextCard()+'</div>'
  +soft
  +'<div style="margin:10px 13px 0">'+pastWrap('today',dayChips,false)+'</div>'
  +lastBk+feed+ui._kun;
@@ -3291,22 +3443,35 @@ function ttsRateCycle(){const r=ttsRate();data.ttsRate=r===1?1.2:r===1.2?0.8:1;s
 
 /* ── وضع السيارة: أذكار الصباح والمساء ── */
 let atts=null;
+/* الفئات المحسوبة (الصباح/المساء) تُتابَع في سجل اليوم؛ الفئات السياقية
+   (النوم، السفر، الجمعة…) تُتابَع داخل الجلسة الصوتية الحالية فقط عبر atts.done. */
+function attsTracked(cat){return !!(DUACATS[cat]&&DUACATS[cat].tracked);}
 function attsPend(cat){
- const ad=(getRec(TODAY).adhkarDone)||{};
- return (cat==='sabah'?ADK_SABAH:ADK_MASA).filter(function(it){return !ad[cat+'-'+it.id];});
+ const list=duaList(cat);
+ if(attsTracked(cat)){
+  const ad=(getRec(TODAY).adhkarDone)||{};
+  return list.filter(function(it){return !ad[cat+'-'+it.id];});
+ }
+ const done=(atts&&atts.cat===cat&&atts.done)||{};
+ return list.filter(function(it){return !done[it.id];});
 }
 function attsMark(key){
- const rec=getRec(TODAY);const ad={...(rec.adhkarDone||{})};ad[key]=true;
- data.records[TODAY]={...rec,adhkarDone:ad};refreshAdhSummary(TODAY);save();
- if(ui.tab==='today'||ui.tab==='adhkar'||true)render();
+ const dash=key.indexOf('-'),cat=dash>0?key.slice(0,dash):'',id=dash>0?key.slice(dash+1):'';
+ if(atts&&atts.cat===cat){if(!atts.done)atts.done={};atts.done[id]=true;}
+ if(attsTracked(cat)){
+  const rec=getRec(TODAY);const ad={...(rec.adhkarDone||{})};ad[key]=true;
+  data.records[TODAY]={...rec,adhkarDone:ad};refreshAdhSummary(TODAY);save();
+ }
+ render();
 }
 function attsStart(cat){
+ if(!DUACATS[cat]){return;}
  if(!vCanListen()){toast('⚠️ جهازك لا يدعم النطق الصوتي — سجّل صوتك من الإعدادات','err');return;}
  ttsCancel();
+ atts={cat:cat,paused:false,done:{}};   /* يُضبط قبل attsPend لأن غير المحسوبة تقرؤه */
  const items=attsPend(cat);
- if(!items.length){toast('✅ اكتملت أذكارك — تقبل الله');return;}
+ if(!items.length){atts=null;toast('✅ اكتملت — تقبّل الله');return;}
  try{if(typeof pauseAudio==='function')pauseAudio();}catch(e){}
- atts={cat:cat,paused:false};
  ttsWakeOn();
  attsStep();
  render();
@@ -3396,7 +3561,7 @@ function attsBar(){
  const items=attsPend(atts.cat),it=items[0];
  const mode=data.adhTtsMode||'full';
  return '<div style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom));left:10px;right:10px;background:linear-gradient(135deg,#241c0e,#1a1408);border:1px solid var(--gbr);border-radius:16px;padding:10px 12px;z-index:85;box-shadow:0 8px 26px rgba(0,0,0,.45)">'
- +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--mu)">🎙 '+(atts.cat==='sabah'?'أذكار الصباح':'أذكار المساء')+(it?' — '+escH(it.n):'')+'</span><span style="font-size:10px;color:var(--tl)">'+(items.length?('بقي '+arNum(items.length)):'')+'</span></div>'
+ +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--mu)">🎙 '+escH(duaCatName(atts.cat)||'أذكار')+(it?' — '+escH(it.n):'')+'</span><span style="font-size:10px;color:var(--tl)">'+(items.length?('بقي '+arNum(items.length)):'')+'</span></div>'
  +'<div style="display:flex;gap:6px">'
  +'<button data-act="'+(atts.paused?'attsresume':'attspause')+'" style="flex:1.2;padding:10px;border-radius:11px;background:linear-gradient(135deg,var(--g),var(--g2));border:none;color:#fff;font-size:15px;font-weight:900">'+(atts.paused?'▶ استئناف':'⏸ إيقاف')+'</button>'
  +'<button data-act="attsskip" style="flex:1;padding:10px;border-radius:11px;background:rgba(201,164,76,.1);border:1px solid var(--gbr);color:var(--go);font-size:13px;font-weight:800">⏭ التالي</button>'
@@ -4666,9 +4831,16 @@ function renderRead(){
 
 /* ═══════════════ سِجل أداء الصلوات (وقتها + سبب التأخير) ═══════════════ */
 const LATE_REASONS=[['sleep','😴 النوم'],['guests','🫂 ضيوف'],['work','💼 العمل'],['fun','📱 الالتهاء بالترفيه']];
+function isFriday(date){try{return new Date((date||TODAY)+'T12:00:00').getDay()===5;}catch(e){return false;}}
+/* اسم خانة الظهر يوم الجمعة = «الجمعة» (الأصل جمعة، وتصير ظهراً إن فاتت أو كان مسافراً) */
+function prLabel(idx,date){return (idx===1&&isFriday(date))?'الجمعة':PN[idx];}
 function prayerAsk(date,idx){
+ /* يوم الجمعة: نسأل أولاً هل صليت الجمعة؟ فإن لا صارت ظهراً */
+ if(idx===1&&isFriday(date)){ui.prAsk={date:date,idx:idx,step:'jumua'};prayerJumuaUI();return;}
  ui.prAsk={date:date,idx:idx,step:'ontime'};
- const nm=PN[idx];
+ prayerOntimeUI(prLabel(idx,date));
+}
+function prayerOntimeUI(nm){
  modalHTML='<div class="mbox" style="text-align:center">'
  +'<div style="font-size:40px;margin-bottom:6px">🕌</div>'
  +'<div style="font-size:17px;font-weight:900;color:var(--go);margin-bottom:4px">صلاة '+nm+'</div>'
@@ -4680,8 +4852,21 @@ function prayerAsk(date,idx){
  +'</div></div>';
  render();
 }
+/* سؤال الجمعة: صلاة جامعة أم صارت ظهراً؟ */
+function prayerJumuaUI(){
+ modalHTML='<div class="mbox" style="text-align:center">'
+ +'<div style="font-size:40px;margin-bottom:6px">🕌</div>'
+ +'<div style="font-size:17px;font-weight:900;color:var(--go);margin-bottom:4px">صلاة الجمعة</div>'
+ +'<div style="font-size:13px;color:var(--tx);margin-bottom:16px">هل صلّيتَ الجمعة مع الجماعة؟</div>'
+ +'<div style="display:flex;flex-direction:column;gap:9px">'
+ +'<button data-act="prjumua" data-v="1" class="bgo" style="width:100%;padding:14px;font-size:15px">✅ نعم، صلّيت الجمعة</button>'
+ +'<button data-act="prjumua" data-v="0" style="width:100%;padding:13px;font-size:14px;border-radius:12px;border:1px solid var(--gbr);background:rgba(201,164,76,.08);color:var(--go);font-weight:800">🧳 لا، صلّيتها ظهراً (سفر أو فاتتني)</button>'
+ +'<button data-act="prcancel" style="width:100%;padding:11px;font-size:13px;background:none;border:none;color:var(--mu)">↩ تراجع</button>'
+ +'</div></div>';
+ render();
+}
 function prayerReasonUI(){
- const nm=PN[ui.prAsk.idx];
+ const nm=prLabel(ui.prAsk.idx,ui.prAsk.date);
  modalHTML='<div class="mbox" style="text-align:center">'
  +'<div style="font-size:36px;margin-bottom:6px">⏰</div>'
  +'<div style="font-size:15px;font-weight:900;color:var(--go);margin-bottom:3px">تأخّرت صلاة '+nm+'</div>'
@@ -4696,11 +4881,14 @@ function prayerSet(date,idx,on,late,reason){
  const rec=getRec(date);
  const pp=[...(rec.p||[0,0,0,0,0])];pp[idx]=on?1:0;
  const meta={...(rec.pMeta||{})};
- if(on)meta[idx]={late:!!late,reason:reason||''};else delete meta[idx];
+ /* علامة الجمعة تُحفظ في خانة الظهر: jumua=true جمعة، false ظهر (سفر/فوات) */
+ const jum=(idx===1&&isFriday(date)&&ui.prAsk)?!!ui.prAsk.jumua:undefined;
+ if(on){meta[idx]={late:!!late,reason:reason||''};if(jum!==undefined)meta[idx].jumua=jum;}else delete meta[idx];
  data.records[date]={...rec,p:pp,pMeta:meta};save();
+ const label=(idx===1&&isFriday(date))?(jum===false?'الظهر (سفر)':'الجمعة'):PN[idx];
  ui.prAsk=null;modalHTML='';
- if(on)toast(late?('⏰ سُجّلت '+PN[idx]+' متأخرة — نسأل الله أن يعيننا'):('✅ '+PN[idx]+' في وقتها — تقبّل الله'),late?'warn':'ok');
- else toast('↩ أُلغيت '+PN[idx],'warn');
+ if(on)toast(late?('⏰ سُجّلت '+label+' متأخرة — نسأل الله أن يعيننا'):('✅ '+label+' — تقبّل الله'),late?'warn':'ok');
+ else toast('↩ أُلغيت '+prLabel(idx,date),'warn');
  render();
  if(on&&late)setTimeout(function(){nudgeShow('prayer-late');},400);
 }
@@ -4709,12 +4897,13 @@ function renderSalahTab(){
   const pi=PK.indexOf(p.k),iN=pi===clk.ni,iD=pi>=0&&!!((getRec(TODAY).p||[])[pi]);
   const meta=((getRec(TODAY).pMeta||{})[pi])||null;const isLate=iD&&meta&&meta.late;
   const clickable=pi>=0;
-  return '<div class="slr" '+(clickable?'data-act="prayrow" data-i="'+pi+'" style="cursor:pointer;':'style="')+'background:'+(iN?'rgba(201,164,76,.1)':isLate?'rgba(201,164,76,.06)':'rgba(42,33,22,.6)')+';border:1px solid '+(iN?'var(--gbr)':isLate?'rgba(201,164,76,.4)':iD?'rgba(107,147,98,.3)':'var(--br)')+'"><div style="display:flex;align-items:center;gap:12px"><span style="font-size:22px">'+p.ic+'</span><div><div style="font-size:16px;font-weight:700;color:'+(iN?'var(--go)':isLate?'var(--go)':iD?'var(--g)':'var(--tx)')+'">'+p.n+(isLate?' <span style="font-size:10px;color:var(--go)">⏰ متأخرة</span>':'')+'</div>'+(iN?'<div style="font-size:11px;color:var(--go)">⏳ القادمة</div>':'')+'</div></div><div style="display:flex;align-items:center;gap:8px">'+(iD?(isLate?'<span>⏰</span>':'<span>✅</span>'):(pi>=0?'<span style="font-size:12px;color:var(--mu)">اضغط للتسجيل</span>':''))+'<span style="font-size:19px;font-weight:900;color:'+(iN?'var(--go)':'var(--tx)')+';direction:ltr">'+times[p.k]+'</span></div></div>';
+  const dispNm=(p.k==='dhuhr'&&isFriday(TODAY))?((meta&&meta.jumua===false)?'الظهر <span style="font-size:10px;color:var(--mu)">(سفر)</span>':'الجمعة'):p.n;
+  return '<div class="slr" '+(clickable?'data-act="prayrow" data-i="'+pi+'" style="cursor:pointer;':'style="')+'background:'+(iN?'rgba(201,164,76,.1)':isLate?'rgba(201,164,76,.06)':'rgba(42,33,22,.6)')+';border:1px solid '+(iN?'var(--gbr)':isLate?'rgba(201,164,76,.4)':iD?'rgba(107,147,98,.3)':'var(--br)')+'"><div style="display:flex;align-items:center;gap:12px"><span style="font-size:22px">'+p.ic+'</span><div><div style="font-size:16px;font-weight:700;color:'+(iN?'var(--go)':isLate?'var(--go)':iD?'var(--g)':'var(--tx)')+'">'+dispNm+(isLate?' <span style="font-size:10px;color:var(--go)">⏰ متأخرة</span>':'')+'</div>'+(iN?'<div style="font-size:11px;color:var(--go)">⏳ القادمة</div>':'')+'</div></div><div style="display:flex;align-items:center;gap:8px">'+(iD?(isLate?'<span>⏰</span>':'<span>✅</span>'):(pi>=0?'<span style="font-size:12px;color:var(--mu)">اضغط للتسجيل</span>':''))+'<span style="font-size:19px;font-weight:900;color:'+(iN?'var(--go)':'var(--tx)')+';direction:ltr">'+times[p.k]+'</span></div></div>';
  }).join('');
  const iqShow=clk.iq&&clk.iqP>=0;
  return '<div class="stit"><span class="si">🕌</span>أوقات الصلاة — '+curLocName()+'</div>'
  +'<div style="display:flex;gap:8px;margin-bottom:12px"><button data-act="useloc" class="bgo" style="flex:1;padding:11px;font-size:14px">📍 استخدم موقعي الحالي</button>'+(data.loc?'<button data-act="resetloc" class="btl" style="padding:11px 14px;font-size:14px">↩ مكة</button>':'')+'</div>'
- +'<div style="background:linear-gradient(145deg,#251c12,#2e2416);border-radius:20px;border:1px solid var(--gbr);padding:18px;text-align:center;margin-bottom:14px"><div style="font-size:13px;color:var(--mu)">الصلاة القادمة</div><div class="arab" style="font-size:30px;font-weight:700;color:var(--go)" id="npS">'+PN[clk.ni]+'</div><div style="font-size:17px;color:var(--g);font-weight:700;margin-top:3px" id="ntS">'+times[PK[clk.ni]]+'</div><div style="font-size:36px;font-weight:900;margin-top:12px;letter-spacing:4px;direction:ltr" id="cdS">'+clk.cd+'</div><div style="font-size:13px;color:var(--mu);margin-top:6px">الوقت الحالي: <strong id="nsS">'+clk.ns+'</strong></div>'
+ +'<div style="background:linear-gradient(145deg,#251c12,#2e2416);border-radius:20px;border:1px solid var(--gbr);padding:18px;text-align:center;margin-bottom:14px"><div style="font-size:13px;color:var(--mu)">الصلاة القادمة</div><div class="arab" style="font-size:30px;font-weight:700;color:var(--go)" id="npS">'+prLabel(clk.ni,TODAY)+'</div><div style="font-size:17px;color:var(--g);font-weight:700;margin-top:3px" id="ntS">'+times[PK[clk.ni]]+'</div><div style="font-size:36px;font-weight:900;margin-top:12px;letter-spacing:4px;direction:ltr" id="cdS">'+clk.cd+'</div><div style="font-size:13px;color:var(--mu);margin-top:6px">الوقت الحالي: <strong id="nsS">'+clk.ns+'</strong></div>'
  +'<div id="iqWrap" style="display:'+(iqShow?'block':'none')+';margin-top:12px;padding-top:12px;border-top:1px solid var(--gbr)"><div style="font-size:13px;color:var(--tl)">⏳ المتبقي على الإقامة (<span id="iqNm">'+(iqShow?'إقامة '+PN[clk.iqP]:'')+'</span>)</div><div style="font-size:28px;font-weight:900;color:var(--tl);letter-spacing:3px;direction:ltr;margin-top:3px" id="iqS">'+(iqShow?clk.iq:'')+'</div></div>'
  +'</div>'
  +'<div class="cb" style="padding:10px;margin-bottom:12px">'+rows+'</div>'
@@ -4972,6 +5161,7 @@ document.addEventListener('click',function(e){
   case 'togpast':{const k=el.dataset.k;ui.pastOpen=ui.pastOpen||{};ui.pastOpen[k]=!ui.pastOpen[k];render();}break;
   case 'seldate':{ui.selDate=el.dataset.date;const r=data.records[ui.selDate];ui.readIn=r&&r.read>0?String(r.read):'';ui.pgReachedIn='';render();}break;
   case 'prayrow':{const i=+el.dataset.i;const rec=getRec(TODAY);const done=(rec.p||[])[i];if(done){prayerSet(TODAY,i,false);}else{prayerAsk(TODAY,i);}}break;
+  case 'prjumua':{if(!ui.prAsk)break;const yes=el.dataset.v==='1';ui.prAsk.jumua=yes;if(yes){prayerSet(ui.prAsk.date,ui.prAsk.idx,true,false,'');}else{ui.prAsk.step='ontime';prayerOntimeUI('الظهر');}}break;
   case 'prontime':{if(!ui.prAsk)break;const on=el.dataset.v==='1';if(on){prayerSet(ui.prAsk.date,ui.prAsk.idx,true,false,'');}else{ui.prAsk.step='reason';prayerReasonUI();}}break;
   case 'prreason':{if(!ui.prAsk)break;prayerSet(ui.prAsk.date,ui.prAsk.idx,true,true,el.dataset.v);}break;
   case 'prcancel':ui.prAsk=null;modalHTML='';render();break;
@@ -5456,6 +5646,10 @@ document.addEventListener('click',function(e){
   case 'adhsalah':ui.adhSalah=el.dataset.v;render();break;
   case 'adhdate':ui.adhDate=el.dataset.date;ui.cnts={};render();break;
   case 'attsplay':attsStart(el.dataset.cat);break;
+  case 'dualisten':attsStart(el.dataset.cat);break;
+  case 'duacar':duaToggleCarManual();break;
+  case 'duaquick':duaQuickModal();break;
+  case 'duasay':duaSayOne(el.dataset.cat,el.dataset.id);break;
   case 'attspause':attsPause();break;
   case 'attsresume':attsResume();break;
   case 'attsskip':attsSkip();break;
@@ -6572,6 +6766,11 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
       if(ok) toast('🎤 سُمح باستخدام الميكروفون — اضغط «تسجيل» الآن','ok');
       else toast('🎤 لم تُمنح صلاحية الميكروفون — لا يمكن التسجيل','err');
     }catch(e){}
+  };
+
+  /* اتصال أندرويد أوتو: تُستدعى من الطبقة الأصلية عند وصل السيارة → أدعية الركوب */
+  window.__mtbCarConnected=function(on){
+    try{ if(typeof duaSetCar==='function') duaSetCar(!!on); }catch(e){}
   };
 
   /* ───────── (2) مشغّل القرآن: مزامنة الحالة مع شريط الإشعارات ───────── */

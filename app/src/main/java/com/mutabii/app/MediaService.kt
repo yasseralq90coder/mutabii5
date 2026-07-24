@@ -89,6 +89,13 @@ class MediaService : MediaBrowserService() {
             "com.android.bluetooth",                    // سمّاعات ومشغّلات السيارة
             "com.android.systemui"
         )
+
+        /** العملاء الذين يعني اتصالهم أنك في السيارة (أندرويد أوتو ومحاكيه). */
+        private val CAR_CLIENTS = setOf(
+            "com.google.android.projection.gearhead",
+            "com.google.android.autosimulator"
+        )
+        @Volatile private var lastCarPing = 0L
     }
 
     private var session: MediaSession? = null
@@ -318,6 +325,16 @@ class MediaService : MediaBrowserService() {
                     android.Manifest.permission.MEDIA_CONTENT_CONTROL, clientPackageName
                 ) == PackageManager.PERMISSION_GRANTED
         } catch (_: Exception) { false }
+
+        // اتصال أندرويد أوتو أو مشغّل السيارة = «أنت في السيارة» — نُبلّغ الصفحة لتشغّل
+        // أدعية الركوب صوتياً. نمرّرها مرّة واحدة كل دقيقة حتى لا تتكرّر مع كل استعلام.
+        if (CAR_CLIENTS.contains(clientPackageName)) {
+            val now = System.currentTimeMillis()
+            if (now - lastCarPing > 60000) {
+                lastCarPing = now
+                WebHolder.eval("window.__mtbCarConnected && window.__mtbCarConnected(true);")
+            }
+        }
         return BrowserRoot(if (trusted) ROOT else EMPTY_ROOT, null)
     }
 
