@@ -43,13 +43,21 @@ class AlarmReceiver : BroadcastReceiver() {
     private fun fireAdhan(c: Context, i: Intent, type: String) {
         val title = i.getStringExtra("title") ?: "الأذان"
         val text = i.getStringExtra("text") ?: ""
+        // الصوت المختار: أذان الحرمين المضمّن، أو ملف المستخدم، أو النغمة الافتراضية
+        val sound = Prefs.adhanSound(c)
+        val resId = SoundLib.adhanRes(c)
+        val uri = if (sound == "custom") Prefs.adhanUri(c) else ""
+        // «التكبيرة فقط» = قصّ أول مدّة بإيقاف التشغيل بعدها
+        val stopMs = if (Prefs.adhanTakbeer(c)) Prefs.adhanTakbeerSec(c) * 1000L
+                     else Prefs.adhanStopSec(c) * 1000L
         val svc = Intent(c, AlarmService::class.java).apply {
             putExtra("mode", "adhan")
             putExtra("title", title); putExtra("text", text)
-            putExtra("uri", Prefs.adhanUri(c))
+            putExtra("uri", uri)
+            putExtra("resId", resId)
             putExtra("vol", Prefs.adhanVol(c))
             putExtra("loop", false)
-            putExtra("autoStopMs", Prefs.adhanStopSec(c) * 1000L)
+            putExtra("autoStopMs", stopMs)
             putExtra("forceMax", false)
             putExtra("vibrate", false)
             putExtra("volStart", Prefs.adhanVol(c))
@@ -66,10 +74,14 @@ class AlarmReceiver : BroadcastReceiver() {
             try { Prefs.resetWakeRetries(c); Prefs.setSnoozeUsed(c, 0) } catch (_: Exception) {}
         }
         // ابدأ الصوت القوي عبر الخدمة
+        val wakeSound = Prefs.wakeSound(c)
+        val wakeRes = SoundLib.wakeRes(c)
+        val wakeUri = if (wakeSound == "custom") Prefs.wakeUri(c) else ""
         val svc = Intent(c, AlarmService::class.java).apply {
             putExtra("mode", "wake")
             putExtra("title", title); putExtra("text", text)
-            putExtra("uri", Prefs.wakeUri(c))
+            putExtra("uri", wakeUri)
+            putExtra("resId", wakeRes)
             putExtra("vol", 100)
             putExtra("loop", true)
             putExtra("autoStopMs", Prefs.wakeAutoStop(c) * 60000L)
@@ -80,31 +92,13 @@ class AlarmReceiver : BroadcastReceiver() {
         }
         startFg(c, svc)
 
-        // شاشة الإيقاظ الكاملة عبر full-screen intent
+        // شاشة الإيقاظ الكاملة: يحملها الآن إشعار الخدمة نفسه (full-screen intent) بمعرّف ID_WAKE،
+        // فلا نبثّ إشعاراً منفصلاً بنفس المعرّف حتى لا يدهس أحدهما الآخر.
+        // نبقي المحاولة المباشرة احتياطاً (تُحجَب على الإصدارات الحديثة لكنها غير ضارّة).
         val act = Intent(c, AlarmActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("title", title); putExtra("text", text)
         }
-        val fsPi = PendingIntent.getActivity(
-            c, 22, act,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val open = PendingIntent.getActivity(
-            c, 23, act,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val n = Notification.Builder(c, Notif.CH_WAKE)
-            .setSmallIcon(R.drawable.ic_notify)
-            .setContentTitle(title).setContentText(text)
-            .setCategory(Notification.CATEGORY_ALARM)
-            .setOngoing(true)
-            .setFullScreenIntent(fsPi, true)
-            .setContentIntent(open)
-            .build()
-        (c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .notify(Notif.ID_WAKE, n)
-
-        // محاولة تشغيل مباشر أيضاً (احتياطي)
         try { c.startActivity(act) } catch (_: Exception) {}
     }
 

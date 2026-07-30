@@ -54,6 +54,8 @@ class MediaService : MediaBrowserService() {
         private val main = Handler(Looper.getMainLooper())
 
         fun update(c: Context) {
+            // بلا سورة لا شيء نعرضه — ولا نطلق خدمة مقدّمة لا تستطيع رفع إشعار (يقتلها النظام)
+            if (MediaState.surah <= 0) { stop(c); return }
             val s = live
             if (s != null) {
                 main.post { try { s.refresh() } catch (_: Exception) {} }
@@ -152,6 +154,17 @@ class MediaService : MediaBrowserService() {
         // حتى لو كان التشغيل متوقّفاً مؤقتاً. لذلك نرفعها أولاً ثم تقرّر refresh الفصل من عدمه.
         if (intent?.action == ACT_SHUTDOWN) { shutdown(); return START_NOT_STICKY }
         ensureForeground()
+        // عقد startForegroundService: لا بدّ من startForeground خلال ٥ ثوانٍ وإلا قُتلت العملية —
+        // حتى لو لا سورة (ensureForeground يخرج مبكّراً حينها). نفي بالعقد بإشعار بسيط ثم نُغلق.
+        if (!inForeground) {
+            try {
+                if (Build.VERSION.SDK_INT >= 29)
+                    startForeground(NOTIF_ID, minimalNotif(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                else startForeground(NOTIF_ID, minimalNotif())
+            } catch (_: Exception) {}
+            shutdown()
+            return START_NOT_STICKY
+        }
         refresh()
         return START_STICKY
     }

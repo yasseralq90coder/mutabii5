@@ -479,7 +479,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--go) !imp
     display: flex;
     justify-content: center;
     align-items: stretch;
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0 !important;
+    /* رفع المحتوى إلى أعلى: نُبقي حدّاً أدنى من الحاشية لتبقى الترويسة أسفل الكاميرا لا خلفها،
+       ونستهلك الفراغ الزائد بدل تركه فارغاً كبيراً */
+    padding: max(3px, calc(env(safe-area-inset-top) - 14px)) 0 env(safe-area-inset-bottom) 0 !important;
     margin: 0 !important;
     box-sizing: border-box;
     transition: background-color 0.4s ease;
@@ -493,7 +495,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--go) !imp
     border: 1px solid #7cb59e;
     outline: 2px solid #5a997f;
     outline-offset: -3px;
-    padding: 8px 2px 4px 2px;
+    padding: 3px 2px 3px 2px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -512,8 +514,9 @@ body.qy .mushaf-frame {
     align-items: center;
     border: 1px solid #7cb59e;
     border-radius: 4px;
-    padding: 4px 10px;
-    margin: 0 4px 6px 4px;
+    padding: 3px 10px;
+    margin: 0 4px 4px 4px;
+    flex-shrink: 0;
     font-size: 13px;
     font-family: 'Noto Naskh Arabic', serif;
     font-weight: 700;
@@ -529,7 +532,8 @@ body.qy .mushaf-header {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 4px;
+    margin-top: 3px;
+    flex-shrink: 0;
     font-size: 15px;
     font-family: 'Noto Naskh Arabic', serif;
     font-weight: 700;
@@ -544,9 +548,16 @@ body.qy .mushaf-footer {
     flex-direction: column;
     justify-content: space-between;
     min-height: 0;
+    /* منع تسرّب آخر سطر فوق التذييل/الأزرار — يبقى النص داخل مساحته */
+    overflow: hidden;
     padding: 0 4px !important;
     margin: 0 !important;
 }
+/* عند التكبير: القراءة بالتمرير الرأسي — النص يكبر ويُقرأ بالسحب بدل أن يتجاوز الإطار */
+.qread .qbody.mzoomed { overflow-y: auto !important; }
+.qread .qbody.mzoomed .mushaf-layout { max-height: none !important; overflow: visible !important; align-items: flex-start; }
+.qread .qbody.mzoomed .mushaf-frame { min-height: 100%; }
+.qread .qbody.mzoomed .mushaf-text { justify-content: flex-start; overflow: visible; gap: 2px; }
 .qread .qftr { padding: 6px 10px calc(6px + env(safe-area-inset-bottom)) !important; }
 .qread .qftr .qbtn { padding: 8px 10px !important; font-size: 13.5px !important; }
 @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
@@ -878,7 +889,7 @@ function save(){
  }
 }
 function hydrate(d){
- return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,pin:undefined};
+ return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,pin:undefined};
 }
 let _loadState='ok';
 function load(){
@@ -1132,14 +1143,23 @@ function alrScreen(){
   +card('⏰ التوقيت',
     num('preMin',A.preMin||0,'تنبيه قبل الوقت','٠ = بلا تنبيه مُسبق',5,0,60,' د')
    +sw('iqamaOn',!!A.iqamaOn,'تنبيه الإقامة','بعد الأذان بمدّة كل صلاة'))
-  +card('🔊 صوت الأذان',
-    '<div class="naRow static"><span class="naL"><span class="naT">ملف الأذان</span>'
-   +'<span class="naS">'+(A.adhanUri?'✅ ملف مخصّص':'النغمة المضمّنة')+'</span></span>'
-   +'<button data-act="napick" data-k="adhan" class="naBtn">📂 اختر</button></div>'
-   +num('adhanVol',A.adhanVol||90,'مستوى الصوت','',10,10,100,'٪')
-   +num('adhanStopSec',A.adhanStopSec||180,'يتوقف تلقائياً بعد','',30,30,600,' ث')
-   +'<div class="naTest"><button data-act="natest" data-k="adhan" class="naTestB">▶️ جرّب الأذان</button>'
-   +'<button data-act="nastop" class="naStopB">⏹ إيقاف</button></div>')
+  +(function(){
+    const asnd=A.adhanSound||'builtin';
+    const miss=(asnd==='makki'&&!A.adhanMakkiOk)||(asnd==='madani'&&!A.adhanMadaniOk);
+    return card('🔊 صوت الأذان',
+      '<div class="naLbl">مصدر صوت الأذان</div>'
+     +seg('adhanSound',[['builtin','الافتراضي'],['makki','الحرم المكي'+(A.adhanMakkiOk?'':' ⚠️')],['madani','المسجد النبوي'+(A.adhanMadaniOk?'':' ⚠️')]],asnd)
+     +(miss?'<div class="naNote">⚠️ لم تُضَف ملفات هذا الأذان بعد — يُشغَّل الافتراضي مؤقتاً حتى تُضيفها.</div>':'')
+     +'<div class="naRow static"><span class="naL"><span class="naT">ملف مخصّص من جهازك</span>'
+     +'<span class="naS">'+(asnd==='custom'?'✅ ملف مخصّص مختار':'اختياري')+'</span></span>'
+     +'<button data-act="napick" data-k="adhan" class="naBtn">📂 اختر</button></div>'
+     +sw('adhanTakbeer',!!A.adhanTakbeer,'التكبيرة فقط','يُشغّل أول '+arNum(A.adhanTakbeerSec||12)+' ثانية ثم يتوقف')
+     +(A.adhanTakbeer?num('adhanTakbeerSec',A.adhanTakbeerSec||12,'مدة التكبيرة','من بداية الأذان',2,4,40,' ث'):'')
+     +num('adhanVol',A.adhanVol||90,'مستوى الصوت','',10,10,100,'٪')
+     +num('adhanStopSec',A.adhanStopSec||180,'يتوقف تلقائياً بعد','',30,30,600,' ث')
+     +'<div class="naTest"><button data-act="natest" data-k="adhan" class="naTestB">▶️ جرّب الأذان</button>'
+     +'<button data-act="nastop" class="naStopB">⏹ إيقاف</button></div>');
+   })()
   +'<div class="naNote">🔉 أثناء الأذان: اضغط أي زر صوت لإيقافه فوراً.</div>';
  }
  else if(T==='wake'){
@@ -1159,8 +1179,11 @@ function alrScreen(){
       return '<button data-act="nadays" data-k="'+(i+1)+'" class="naChip sm'+(on?' on':'')+'">'+d+'</button>';
      }).join('')+'</div>')
   +card('🔊 قوة التنبيه',
-    '<div class="naRow static"><span class="naL"><span class="naT">صوت الإيقاظ</span>'
-   +'<span class="naS">'+(A.wakeUri?'✅ ملف مخصّص':'النغمة المضمّنة')+'</span></span>'
+    '<div class="naLbl">صوت الإيقاظ</div>'
+   +seg('wakeSound',[['builtin','الافتراضي'],['strong','قوي جداً'+(A.wakeStrongOk?'':' ⚠️')]],A.wakeSound||'builtin')
+   +(((A.wakeSound||'builtin')==='strong'&&!A.wakeStrongOk)?'<div class="naNote">⚠️ لم يُضَف التنبيه القوي بعد — يُشغَّل الافتراضي مؤقتاً حتى تُضيف الملف.</div>':'')
+   +'<div class="naRow static"><span class="naL"><span class="naT">ملف مخصّص من جهازك</span>'
+   +'<span class="naS">'+((A.wakeSound||'builtin')==='custom'?'✅ ملف مخصّص مختار':'اختياري')+'</span></span>'
    +'<button data-act="napick" data-k="wake" class="naBtn">📂 اختر</button></div>'
    +sw('wakeForceMax',!!A.wakeForceMax,'افرض أقصى صوت','يتجاوز ضبط صوت جهازك')
    +sw('wakeVib',!!A.wakeVib,'اهتزاز قوي','')
@@ -1637,10 +1660,6 @@ function nowWindow(){
  if(F>=99999||D>=99999||M>=99999)return null;
  const rec=getRec(TODAY),ad=rec.adhkarDone||{},sn=rec.sunnah||{},pray=rec.p||[];
  const dow=now.getDay(),W=[];
- /* ٠ — السيارة (أعلى أولوية): بطاقة استماع لأدعية السفر ما دمتَ متصلاً */
- if(duaCarOn())W.push({id:'car',from:0,to:86399,ic:'🚗',nm:'أدعية السفر والركوب',
-  fd:'أنت في السيارة — استمع لدعاء الركوب ودعاء السفر بصوتك أو بقارئ الجهاز',
-  act:'data-act="dualisten" data-cat="travel"',btn:'🔊 استمع لأدعية الركوب',tone:'go'});
  /* يدعم النوافذ التي تعبر منتصف الليل (الثلث الأخير، الوتر) */
  const add=function(o){
   const inw=o.from<=o.to?(nowS>=o.from&&nowS<o.to):(nowS>=o.from||nowS<o.to);
@@ -1670,7 +1689,7 @@ function nowWindow(){
  /* ٤ — ساعة الإجابة يوم الجمعة: قائمة أدعية جامعة صوتية */
  if(dow===5)add({id:'saah',from:A,to:M,ic:'🤲',nm:'آخر ساعة من الجمعة',
   fd:'ساعة لا يوافقها عبد مسلم يسأل الله شيئاً إلا أعطاه إياه — ألِحّ بهذه الأدعية الجامعة',
-  act:'data-act="dualisten" data-cat="jumua"',btn:'🔊 استمع لأدعية الساعة',tone:'tl'});
+  act:'data-act="goduas"',btn:'🤲 افتح الأدعية الجامعة',tone:'tl'});
  /* ٥ — الكهف يوم الجمعة */
  if(dow===5&&!rec.kahf)add({id:'kahf',from:F,to:M,ic:'🌟',nm:'سورة الكهف',
   fd:'من قرأ سورة الكهف يوم الجمعة أضاء له من النور ما بين الجمعتين',
@@ -1694,8 +1713,8 @@ function nowWindow(){
   act:'data-act="togsun" data-key="wt"',btn:'سجّل الوتر',tone:'tl'});
  /* ٩ — أذكار النوم: من العشاء حتى الفجر — استماع بلا لمس قبل النوم */
  add({id:'sleep',from:I+3600,to:F,ic:'🌙',nm:'أذكار النوم',
-  fd:'حصّن ليلتك — آية الكرسي وخواتيم البقرة والمعوذات وأذكار الفراش، تُقرأ عليك صوتياً',
-  act:'data-act="dualisten" data-cat="sleep"',btn:'🔊 استمع لأذكار النوم',tone:'tl'});
+  fd:'حصّن ليلتك — آية الكرسي وخواتيم البقرة والمعوذات وأذكار الفراش',
+  act:'data-act="goduas"',btn:'🌙 افتح الأدعية',tone:'tl'});
  return W.length?W[0]:null;
 }
 function nowCard(){
@@ -1718,22 +1737,14 @@ function nowCard(){
  +'</div>';
 }
 /* بطاقة الأدعية السياقية: زر السيارة + استماع سريع لكل فئة + أدعية يومية */
+/* تذكير نصّي بسيط أسفل الرئيسية — دعاء الركوب/السفر نصّاً، وباقي الأدعية في تبويب «الأدعية» */
 function duaContextCard(){
- const car=duaCarOn();
- const isFri=new Date().getDay()===5;
- const chip=function(cat,ic,label){
-  return '<button data-act="dualisten" data-cat="'+cat+'" style="flex:1 1 30%;min-width:96px;padding:11px 8px;border-radius:12px;border:1px solid var(--gbr);background:rgba(201,164,76,.06);color:var(--go);font-size:12px;font-weight:800">'+ic+' '+label+'</button>';
- };
- let chips=chip('sleep','🌙','النوم')+chip('wake','☀️','الاستيقاظ')+chip('travel','🚗','السفر');
- if(isFri)chips+=chip('jumua','🤲','الجمعة');
- chips+=chip('sabah','🌅','الصباح')+chip('masa','🌇','المساء');
- return '<div class="stit"><span class="si">🤲</span>أدعية بحسب حالك</div>'
- +'<div class="cb" style="margin:0 13px">'
- +'<button data-act="duacar" style="width:100%;padding:12px;border-radius:12px;margin-bottom:9px;border:1px solid '+(car?'var(--g)':'var(--br)')+';background:'+(car?'rgba(107,147,98,.12)':'rgba(42,33,22,.55)')+';color:'+(car?'var(--g)':'var(--tx)')+';font-size:14px;font-weight:900">'+(car?'🚗 وضع السيارة مُفعّل — اضغط للإيقاف':'🚗 أنا في السيارة / مسافر — تشغيل أدعية الركوب')+'</button>'
- +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px">'+chips+'</div>'
- +'<button data-act="duaquick" style="width:100%;padding:10px;border-radius:11px;border:1px dashed var(--br);background:none;color:var(--mu);font-size:12px;font-weight:700">📖 أدعية يومية سريعة (المنزل، المسجد، الطعام…)</button>'
- +'<div style="font-size:10px;color:var(--mu);text-align:center;margin-top:8px">تُقرأ بصوتك المسجَّل إن وُجد، وإلا بقارئ الجهاز. كل النصوص صحيحة على منهج السلف.</div>'
- +'</div>';
+ return '<div style="margin:12px 13px 0"><div class="cb" style="padding:11px 13px;border:1px solid var(--br);background:rgba(42,33,22,.4)">'
+ +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+ +'<span style="font-size:12px;font-weight:800;color:var(--go)">🚗 تذكير: دعاء الركوب والسفر</span>'
+ +'<button data-act="goduas" style="font-size:11px;color:var(--tl);background:none;border:none;font-weight:800;cursor:pointer">كل الأدعية ←</button></div>'
+ +'<div class="arab" style="font-size:12.5px;line-height:1.95;color:var(--mu)">'+escH(TRAVEL_DUA)+'</div>'
+ +'</div></div>';
 }
 /* أدعية يومية قصيرة — نافذة عرض */
 function duaQuickModal(){
@@ -1871,7 +1882,7 @@ function openSettings(){
 
  /* صفحة كاملة بتبويبات — كل نوع إعدادات في تبويبه */
  const SETTABS=[['look','🎨','المظهر'],['prayer','🕌','الصلاة'],['quran','📖','القرآن'],
-                ['voice','🎙','الأصوات'],['data','💾','البيانات'],['about','ℹ️','عن التطبيق']];
+                ['data','💾','البيانات'],['about','ℹ️','عن التطبيق']];
  const T=SETTABS.some(function(t){return t[0]===ui.setTab;})?ui.setTab:'look';
  ui.setTab=T;
  let body='';
@@ -1905,9 +1916,6 @@ function openSettings(){
    +'<div id="qadSlot" style="padding:0 12px"></div>')
   +card('📥 المصاحف',row('dlopen','📥','تنزيل مصاحف العرض','مصحف المدينة والتفسير — للقراءة بلا إنترنت'));
  }
- else if(T==='voice'){
-  body=vManageHTML(card,row);
- }
  else if(T==='data'){
   body=card('📦 مساحة التخزين',
     '<div style="padding:12px 12px 8px"><div id="stgBox" style="font-size:11px;color:var(--mu);background:rgba(20,16,10,.5);border:1px solid var(--br);border-radius:11px;padding:10px;line-height:1.9">…</div></div>')
@@ -1918,8 +1926,7 @@ function openSettings(){
    +'<button data-act="exportcsv" style="padding:11px 6px;font-size:12px;font-weight:700;background:rgba(107,147,98,.1);border:1px solid var(--g);color:var(--g);border-radius:12px">📊 تصدير CSV</button>'
    +'<label style="display:flex;align-items:center;justify-content:center;gap:5px;padding:11px 6px;font-size:12px;font-weight:700;background:rgba(155,116,204,.1);border:1px solid var(--pu);color:var(--pu);border-radius:12px;cursor:pointer">📥 استيراد CSV<input type="file" accept=".csv,text/csv" id="importCsvFile" style="display:none"></label>'
    +'</div>'
-   +'<div style="font-size:10px;color:var(--mu);text-align:center;padding:0 12px 12px">JSON = كل بياناتك (الأساس المعتمد) • CSV = جدول للعرض. صدّر أسبوعياً حفظاً لبياناتك.</div>'
-   +'<div style="font-size:10.5px;color:var(--tl);background:rgba(90,154,146,.07);border-top:1px solid var(--br);padding:10px 12px;line-height:1.8">🎙 تسجيلات الأذكار الصوتية <b>لا تدخل</b> في ملف JSON لكِبَر حجمها — صدّرها على حدة من تبويب «الأصوات».</div>');
+   +'<div style="font-size:10px;color:var(--mu);text-align:center;padding:0 12px 12px">JSON = كل بياناتك (الأساس المعتمد) • CSV = جدول للعرض. صدّر أسبوعياً حفظاً لبياناتك.</div>');
  }
  else {
   body=card('📔 الدليل',row('openguide','📔','دليل الاستعمال والمميزات','١٤ شرحاً لكل أقسام التطبيق'))
@@ -2355,7 +2362,7 @@ ui._kun='';
  +missNote
  +dayThread(rec)
  +'<div style="margin:12px 13px 0">'+sect('sunT','📿','السنن الرواتب — اليوم كاملاً','<div class="sg">'+sunnahItemsToday(rec)+'</div>')+'</div>'
- +'<div style="margin-top:12px">'+duaContextCard()+'</div>'
+ +duaContextCard()
  +soft
  +'<div style="margin:10px 13px 0">'+pastWrap('today',dayChips,false)+'</div>'
  +lastBk+feed+ui._kun;
@@ -2575,7 +2582,6 @@ function renderAdhkar(){
   }
   return pastWrap('adhkar',dateChips,ui.adhDate!==TODAY)
   +'<div class="at">'+tabBtns+'</div>'+salahPicker
-  +attsRow()+attsBar()
   +'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button data-act="adhview" style="font-size:12px;color:var(--tl);padding:4px 10px;border:1px solid var(--tl);border-radius:8px">📋 عرض القائمة كاملة</button></div>'
   +seqHTML;
  }
@@ -2597,7 +2603,6 @@ function renderAdhkar(){
  }).join('');
 
  return pastWrap('adhkar',dateChips,ui.adhDate!==TODAY)
- +attsRow()+attsBar()
  +(isToday?'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button data-act="adhview" style="font-size:12px;color:var(--tl);padding:4px 10px;border:1px solid var(--tl);border-radius:8px">🔂 الوضع التسلسلي</button></div>':'<div class="notice">📝 تعديل أذكار يوم: '+new Date(ui.adhDate+'T12:00:00').toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{weekday:'long',day:'numeric',month:'long'})+'</div>')
  +'<div class="at">'+tabBtns+'</div>'+salahPicker+itemsHTML;
 }
@@ -2653,8 +2658,28 @@ function renderWorship(){
  const toggle='<div class="at" style="margin-bottom:12px">'
  +'<button data-act="adhmode" data-v="adhkar" class="'+(md==='adhkar'?'ac':'')+'">🤲 الأذكار</button>'
  +'<button data-act="adhmode" data-v="dhikr" class="'+(md==='dhikr'?'ac':'')+'">📿 الذكر والتسبيح</button>'
+ +'<button data-act="adhmode" data-v="duas" class="'+(md==='duas'?'ac':'')+'">🤲 الأدعية</button>'
  +'</div>';
- return toggle+(md==='dhikr'?renderDhikr():renderAdhkar());
+ return toggle+(md==='duas'?renderDuas():(md==='dhikr'?renderDhikr():renderAdhkar()));
+}
+/* ═══════════════ TAB: الأدعية المأثورة — نصّاً مع عدّاد قراءة ═══════════════ */
+function renderDuas(){
+ if(!data.duaReads)data.duaReads={};
+ const cards=DUAS.map(function(d){
+  const n=data.duaReads[d.o]||0;
+  return '<div class="acit'+(n>0?' done':'')+'">'
+   +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
+   +'<span class="acn'+(n>0?' done':'')+'">'+escH(d.o)+'</span>'
+   +'<span class="accnt'+(n>0?' done':'')+'">'+arNum(n)+'×</span></div>'
+   +'<div class="actx arab">'+escH(d.a)+'</div>'
+   +'<div style="font-size:11px;color:var(--mu);margin-bottom:8px">'+escH(d.s||'')+'</div>'
+   +'<div class="acbtns">'
+   +'<button data-act="duainc" data-o="'+escH(d.o)+'" class="bg" style="flex:2;padding:9px;font-size:14px">＋ قرأتُها ('+arNum(n)+')</button>'
+   +(n>0?'<button data-act="duareset" data-o="'+escH(d.o)+'" class="bgo" style="flex:1;padding:9px;font-size:13px">↺ تصفير</button>':'')
+   +'</div></div>';
+ }).join('');
+ return '<div class="notice" style="color:var(--go);border-color:var(--gbr);background:rgba(201,164,76,.06)">🤲 أدعية مأثورة صحيحة — اقرأها واضغط «قرأتُها» لتُحصي عدد مرّاتك. كلها على منهج أهل السنة.</div>'
+ +cards;
 }
 
 /* ═══════════════ TAB: السنة النبوية والتفسير ═══════════════ */
@@ -5577,6 +5602,9 @@ document.addEventListener('click',function(e){
   }break;
   case 'adhview':ui.adhSeq=!ui.adhSeq;render();break;
   case 'adhmode':ui.adhMode=el.dataset.v;render();window.scrollTo(0,0);break;
+  case 'goduas':ui.tab='adhkar';ui.adhMode='duas';render();window.scrollTo(0,0);break;
+  case 'duainc':{if(!data.duaReads)data.duaReads={};const o=el.dataset.o;data.duaReads[o]=(data.duaReads[o]||0)+1;save();render();}break;
+  case 'duareset':{if(data.duaReads)delete data.duaReads[el.dataset.o];save();render();}break;
   case 'goadhkar':{ui.tab='adhkar';ui.adhMode='adhkar';ui.adhDate=TODAY;const c=el.dataset.cat;if(c==='p'){ui.adhTab='salah';ui.adhSalah=el.dataset.pk;}else ui.adhTab=c;render();window.scrollTo(0,0);}break;
   /* السنة والتفسير */
   case 'hsdl':hsDownload(el.dataset.id);break;
@@ -6357,7 +6385,8 @@ function renderReader(){
    const pi=getPI(p);
    const sInfo = 'سورة ' + (pi ? pi.surah : '');
    const jInfo = 'الجزء ' + arNum(pi ? pi.juz : 1);
-   pageHTML='<div class="qbody'+(ui.zenMode?' zen-mode':'')+'" data-act="qchrome" style="overflow-y:hidden !important; padding:0 !important; margin:0 !important;">'
+   var _mz=((+data.mScale||1)>1.01);
+   pageHTML='<div class="qbody'+(ui.zenMode?' zen-mode':'')+(_mz?' mzoomed':'')+'" data-act="qchrome" style="'+(_mz?'overflow-y:auto !important;':'overflow-y:hidden !important;')+' padding:0 !important; margin:0 !important;">'
      +'<div class="ambient-glow '+ambientClass+'"></div>'
      +'<div class="mushaf-layout" style="max-height:100%; overflow:hidden;">'
      +'<div class="mushaf-frame">'
@@ -6453,9 +6482,10 @@ function fitMadina(){
   lines.forEach(el=>{const sw=el.scrollWidth;if(sw>maxR)maxR=sw;});
   if(!maxR)return;
   const H = page.clientHeight || window.innerHeight;
-  let maxF_Height = H / (lines.length * 1.95);
   let F=(F0*W/maxR)*sc;
-  F = Math.min(F, maxF_Height);
+  /* عند حجم ١٠٠٪ نحصر الخط ليملأ الصفحة ارتفاعاً بلا تجاوز؛ وعند التكبير نترك الخط يكبر
+     ويُقرأ بالتمرير الرأسي (mzoomed) بدل أن يتجاوز الإطار فوق الأزرار */
+  if(sc<=1.01){ const maxF_Height = H / (lines.length * 1.95); F = Math.min(F, maxF_Height); }
   F=Math.max(11,Math.min(90,F));
   lines.forEach(el=>{el.style.fontSize=F.toFixed(2)+'px';});
   /* تبرير كل سطر ليمتد من الحافة إلى الحافة بلا فراغ (فصل القراءة عن الكتابة لمنع الـ Layout Thrashing) */
@@ -6533,7 +6563,7 @@ function importJSON(e){
    const bk=JSON.parse(ev.target.result);
    const d=bk.data||bk; /* يقبل الملف بغلاف أو بدونه */
    if(!d.records||typeof d.records!=='object'||Array.isArray(d.records)){toast('❌ الملف غير صحيح','err');return;}
-   data={records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||data.hifzSurah||'',mushafView:d.mushafView||data.mushafView||'taj',loc:d.loc||data.loc||null,iqama:{...IQAMA_DEF,...(data.iqama||{}),...(d.iqama||{})},favHadith:d.favHadith||data.favHadith||[],reciter:d.reciter||data.reciter||'kurdi',audioLog:d.audioLog||data.audioLog||[],samKhatma:d.samKhatma||data.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||data.reciterBases||{},audioResume:d.audioResume||data.audioResume||null,settings:{fontScale:1,...(data.settings||{}),...(d.settings||{})},intentions:d.intentions||data.intentions||{},hifz:d.hifz||data.hifz||{pages:{}},audioPos:d.audioPos||data.audioPos||{},reciterReads:d.reciterReads||data.reciterReads||{},books:d.books||data.books||{},bookDays:d.bookDays||data.bookDays||{},tadabbur:d.tadabbur||data.tadabbur||[],faidat:d.faidat||data.faidat||[],customBooks:d.customBooks||data.customBooks||{},ayahMarks:d.ayahMarks||data.ayahMarks||[],ayahCats:d.ayahCats||data.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||data.mScale||1,madinaDl:!!(d.madinaDl||data.madinaDl),tafsirDl:!!(d.tafsirDl||data.tafsirDl),alerts:d.alerts||data.alerts||null,bkMarks:d.bkMarks||data.bkMarks||{},bkTheme:d.bkTheme||data.bkTheme,bkLH:(d.bkLH!==undefined?d.bkLH:data.bkLH),ttsRate:d.ttsRate||data.ttsRate,adhTtsMode:d.adhTtsMode||data.adhTtsMode,ttsVoice:d.ttsVoice||data.ttsVoice,cntsDay:d.cntsDay||data.cntsDay||null,toastPos:d.toastPos||data.toastPos||'top',dispMode:d.dispMode||data.dispMode||'full',qaudio:d.qaudio||data.qaudio||null,khatmaTimes:d.khatmaTimes||data.khatmaTimes||{},khatmaLog:d.khatmaLog||data.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline||data.khatmaTimeBaseline,qFull:(d.qFull!==undefined?d.qFull:data.qFull),qNight:!!(d.qNight||data.qNight),audioFav:d.audioFav||data.audioFav||[],theme:d.theme||data.theme,fontScale:(d.fontScale!==undefined?d.fontScale:data.fontScale)};
+   data={records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||data.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||data.hifzSurah||'',mushafView:d.mushafView||data.mushafView||'taj',loc:d.loc||data.loc||null,iqama:{...IQAMA_DEF,...(data.iqama||{}),...(d.iqama||{})},favHadith:d.favHadith||data.favHadith||[],reciter:d.reciter||data.reciter||'kurdi',audioLog:d.audioLog||data.audioLog||[],samKhatma:d.samKhatma||data.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||data.reciterBases||{},audioResume:d.audioResume||data.audioResume||null,settings:{fontScale:1,...(data.settings||{}),...(d.settings||{})},intentions:d.intentions||data.intentions||{},hifz:d.hifz||data.hifz||{pages:{}},audioPos:d.audioPos||data.audioPos||{},reciterReads:d.reciterReads||data.reciterReads||{},books:d.books||data.books||{},bookDays:d.bookDays||data.bookDays||{},tadabbur:d.tadabbur||data.tadabbur||[],faidat:d.faidat||data.faidat||[],customBooks:d.customBooks||data.customBooks||{},ayahMarks:d.ayahMarks||data.ayahMarks||[],ayahCats:d.ayahCats||data.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||data.mScale||1,madinaDl:!!(d.madinaDl||data.madinaDl),tafsirDl:!!(d.tafsirDl||data.tafsirDl),alerts:d.alerts||data.alerts||null,bkMarks:d.bkMarks||data.bkMarks||{},bkTheme:d.bkTheme||data.bkTheme,bkLH:(d.bkLH!==undefined?d.bkLH:data.bkLH),ttsRate:d.ttsRate||data.ttsRate,adhTtsMode:d.adhTtsMode||data.adhTtsMode,ttsVoice:d.ttsVoice||data.ttsVoice,cntsDay:d.cntsDay||data.cntsDay||null,toastPos:d.toastPos||data.toastPos||'top',dispMode:d.dispMode||data.dispMode||'full',qaudio:d.qaudio||data.qaudio||null,khatmaTimes:d.khatmaTimes||data.khatmaTimes||{},khatmaLog:d.khatmaLog||data.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline||data.khatmaTimeBaseline,qFull:(d.qFull!==undefined?d.qFull:data.qFull),qNight:!!(d.qNight||data.qNight),audioFav:d.audioFav||data.audioFav||[],theme:d.theme||data.theme,fontScale:(d.fontScale!==undefined?d.fontScale:data.fontScale)};
    ['audioFav','tasbihN','tasbihD','hsets','mushafDl','qFull','qNight','tawaf','theme','fontScale','lastBackup'].forEach(function(k){if(d[k]!==undefined)data[k]=d[k];});
    if(!data.audioFav)data.audioFav=[];
    save();toast('✅ تمت الاستعادة ('+Object.keys(data.records).length+' يوم)');render();
@@ -6778,9 +6808,8 @@ setInterval(function(){_dayCheck();const d=new Date();if(d.getHours()===0&&d.get
   };
 
   /* اتصال أندرويد أوتو: تُستدعى من الطبقة الأصلية عند وصل السيارة → أدعية الركوب */
-  window.__mtbCarConnected=function(on){
-    try{ if(typeof duaSetCar==='function') duaSetCar(!!on); }catch(e){}
-  };
+  /* أُزيلت قراءة أدعية السيارة الصوتية — لم تعد بطاقة السيارة تُشغّل صوتاً */
+  window.__mtbCarConnected=function(on){};
 
   /* ───────── (2) مشغّل القرآن: مزامنة الحالة مع شريط الإشعارات ───────── */
   var _last='';

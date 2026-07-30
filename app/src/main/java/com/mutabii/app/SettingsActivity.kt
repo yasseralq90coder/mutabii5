@@ -71,13 +71,36 @@ class SettingsActivity : Activity() {
         root.addView(seekRow("إيقاف الأذان تلقائياً بعد", Prefs.adhanStopSec(this), 30, 600, "ثانية") { v ->
             Prefs.sp(this).edit().putInt(Prefs.K_ADHAN_STOP, v).apply()
         })
+        // مصدر صوت الأذان المضمّن: الافتراضي أو أذان الحرمين (يُضاف الملف في res/raw)
+        val adhanSrcGroup = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        val rbAdDef = radio("الافتراضي")
+        val rbAdMakki = radio("الحرم المكي")
+        val rbAdMadani = radio("النبوي")
+        adhanSrcGroup.addView(rbAdDef); adhanSrcGroup.addView(rbAdMakki); adhanSrcGroup.addView(rbAdMadani)
+        when (Prefs.adhanSound(this)) {
+            "makki" -> rbAdMakki.isChecked = true
+            "madani" -> rbAdMadani.isChecked = true
+            else -> rbAdDef.isChecked = true
+        }
+        adhanSrcGroup.setOnCheckedChangeListener { _, id ->
+            val v = when (id) { rbAdMakki.id -> "makki"; rbAdMadani.id -> "madani"; else -> "builtin" }
+            Prefs.sp(this).edit().putString(Prefs.K_ADHAN_SOUND, v).apply()
+        }
+        root.addView(labeled("صوت الأذان المضمّن", adhanSrcGroup))
+        root.addView(switchRow("التكبيرة فقط (أول ${Prefs.adhanTakbeerSec(this)} ثانية)", Prefs.adhanTakbeer(this)) { v ->
+            Prefs.sp(this).edit().putBoolean(Prefs.K_ADHAN_TAKBEER, v).apply()
+        })
+
         adhanLabel = valueLabel(soundName(Prefs.adhanUri(this), "النغمة الافتراضية"))
-        root.addView(rowWithButton("صوت الأذان", "اختيار ملف", adhanLabel!!) {
+        root.addView(rowWithButton("أو ملف مخصّص من جهازك", "اختيار ملف", adhanLabel!!) {
             pickTarget = "adhan"; pickAudio()
         })
         root.addView(smallButton("استخدام النغمة الافتراضية للأذان") {
-            Prefs.sp(this).edit().putString(Prefs.K_ADHAN_URI, "").apply()
+            Prefs.sp(this).edit()
+                .putString(Prefs.K_ADHAN_URI, "")
+                .putString(Prefs.K_ADHAN_SOUND, "builtin").apply()
             adhanLabel?.text = "النغمة الافتراضية"
+            rbAdDef.isChecked = true
         })
 
         // ===== الإيقاظ =====
@@ -134,13 +157,28 @@ class SettingsActivity : Activity() {
         }
         root.addView(card(daysRow))
 
+        // صوت الإيقاظ المضمّن: الافتراضي أو التنبيه القوي جداً (يُضاف الملف wake_strong في res/raw)
+        val wakeSrcGroup = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        val rbWkDef = radio("الافتراضي")
+        val rbWkStrong = radio("قوي جداً")
+        wakeSrcGroup.addView(rbWkDef); wakeSrcGroup.addView(rbWkStrong)
+        if (Prefs.wakeSound(this) == "strong") rbWkStrong.isChecked = true else rbWkDef.isChecked = true
+        wakeSrcGroup.setOnCheckedChangeListener { _, id ->
+            val v = if (id == rbWkStrong.id) "strong" else "builtin"
+            Prefs.sp(this).edit().putString(Prefs.K_WAKE_SOUND, v).apply()
+        }
+        root.addView(labeled("صوت الإيقاظ المضمّن", wakeSrcGroup))
+
         wakeLabel = valueLabel(soundName(Prefs.wakeUri(this), "نغمة الإيقاظ الافتراضية"))
-        root.addView(rowWithButton("صوت الإيقاظ", "اختيار ملف", wakeLabel!!) {
+        root.addView(rowWithButton("أو ملف مخصّص من جهازك", "اختيار ملف", wakeLabel!!) {
             pickTarget = "wake"; pickAudio()
         })
         root.addView(smallButton("استخدام نغمة الإيقاظ الافتراضية") {
-            Prefs.sp(this).edit().putString(Prefs.K_WAKE_URI, "").apply()
+            Prefs.sp(this).edit()
+                .putString(Prefs.K_WAKE_URI, "")
+                .putString(Prefs.K_WAKE_SOUND, "builtin").apply()
             wakeLabel?.text = "نغمة الإيقاظ الافتراضية"
+            rbWkDef.isChecked = true
         })
 
         root.addView(seekRow("مستوى الصوت الابتدائي", Prefs.wakeVolStart(this), 5, 100, "%") { v ->
@@ -214,6 +252,19 @@ class SettingsActivity : Activity() {
 
         val sv = ScrollView(this).apply { addView(root); setBackgroundColor(BG) }
         setContentView(sv)
+    }
+
+    /**
+     * كل ضبط في هذه الشاشة يُكتب في Prefs فوراً، لكن سريان الأثر على المنبّهات
+     * يحتاج إعادة جدولة. نفعلها عند مغادرة الشاشة (لا عند زر الحفظ وحده)، فيتّسق
+     * السلوك مع شاشة التنبيهات في الويب التي تعيد الجدولة عند كل تغيير.
+     */
+    override fun onStop() {
+        super.onStop()
+        try {
+            AlarmScheduler.rescheduleAll(this)
+            if (!Prefs.wakeOn(this)) AlarmScheduler.cancelWakeExtras(this)
+        } catch (_: Exception) {}
     }
 
     // ====== مُساعدات واجهة ======
@@ -343,10 +394,14 @@ class SettingsActivity : Activity() {
                 contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             } catch (_: Exception) {}
             if (pickTarget == "wake") {
-                Prefs.sp(this).edit().putString(Prefs.K_WAKE_URI, uri.toString()).apply()
+                Prefs.sp(this).edit()
+                    .putString(Prefs.K_WAKE_URI, uri.toString())
+                    .putString(Prefs.K_WAKE_SOUND, "custom").apply()
                 wakeLabel?.text = soundName(uri.toString(), "")
             } else {
-                Prefs.sp(this).edit().putString(Prefs.K_ADHAN_URI, uri.toString()).apply()
+                Prefs.sp(this).edit()
+                    .putString(Prefs.K_ADHAN_URI, uri.toString())
+                    .putString(Prefs.K_ADHAN_SOUND, "custom").apply()
                 adhanLabel?.text = soundName(uri.toString(), "")
             }
         }
@@ -360,6 +415,7 @@ class SettingsActivity : Activity() {
     private fun testSound(mode: String) {
         val svc = Intent(this, AlarmService::class.java).apply {
             putExtra("mode", mode)
+            putExtra("isTest", true)
             putExtra("title", "تجربة الأذان"); putExtra("text", Store.loc(this@SettingsActivity))
             putExtra("uri", Prefs.adhanUri(this@SettingsActivity))
             putExtra("vol", Prefs.adhanVol(this@SettingsActivity))
@@ -378,6 +434,7 @@ class SettingsActivity : Activity() {
         })
         val svc = Intent(this, AlarmService::class.java).apply {
             putExtra("mode", "wake")
+            putExtra("isTest", true)
             putExtra("title", "تجربة الإيقاظ"); putExtra("text", "الصلاةُ خيرٌ من النوم")
             putExtra("uri", Prefs.wakeUri(this@SettingsActivity))
             putExtra("vol", 100); putExtra("loop", true)

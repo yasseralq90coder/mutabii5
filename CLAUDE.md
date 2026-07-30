@@ -26,9 +26,9 @@ Both `debug` and `release` build types are signed with the committed keystore `a
 
 ### The web/native boundary
 
-`app/src/main/assets/www/index.html` is ~2.4 MB / 4.7k lines and holds the entire app UI and logic. Treat everything before line ~4651 as the untouched upstream web app.
+`app/src/main/assets/www/index.html` is ~2.7 MB / ~6.9k lines and holds the entire app UI and logic. Everything before the final `<script>` block is the web app body (originally upstream, now carrying app-specific features too — adhkar/dua/alarm screens).
 
-The **only** app-specific part is the final `<script>` block (`index.html:4652-4840`), guarded by `if(!window.MTBNative) return;` so the same file still runs as a plain web page. Changes to native behavior almost always belong in that block plus the matching Kotlin, not in the body of the web app.
+The app-native bridge is the final `<script>` block (`index.html:6709-6940`, guarded by `if(!window.MTBNative) return;` at the top of its IIFE) so the same file still runs as a plain web page. Line numbers drift as the file is edited — search for the `جسر مُتابِعي الأصلي` marker comment. Changes to native behavior almost always belong in that block plus the matching Kotlin, not in the body of the web app.
 
 Two directions of traffic:
 

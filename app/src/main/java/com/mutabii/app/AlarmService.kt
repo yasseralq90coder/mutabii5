@@ -29,6 +29,7 @@ class AlarmService : Service() {
     private var ramper: Runnable? = null
     private var volObs: android.database.ContentObserver? = null
     private var curMode = "adhan"
+    private var isTest = false         // تجربة من الإعدادات: لا تدخل حلقة معاودات الإيقاظ الحقيقية
     private var guardVol = false      // وضع الإيقاظ: يمنع خفض الصوت للإسكات
     private var lastVol = -1
     private var userVol = -1          // مستوى صوت المنبّه قبل التنبيه — يُعاد بعده
@@ -43,12 +44,14 @@ class AlarmService : Service() {
         val title = intent?.getStringExtra("title") ?: "مُتابِعي"
         val text = intent?.getStringExtra("text") ?: ""
         val uriStr = intent?.getStringExtra("uri") ?: ""
+        val resId = intent?.getIntExtra("resId", 0) ?: 0
         val loop = intent?.getBooleanExtra("loop", false) ?: false
         val autoStopMs = intent?.getLongExtra("autoStopMs", 0L) ?: 0L
         val forceMax = intent?.getBooleanExtra("forceMax", false) ?: false
         val vibrate = intent?.getBooleanExtra("vibrate", false) ?: false
         val volStart = (intent?.getIntExtra("volStart", 80) ?: 80).coerceIn(0, 100)
         val rampSec = intent?.getIntExtra("rampSec", 0) ?: 0
+        isTest = intent?.getBooleanExtra("isTest", false) ?: false
 
         // تنبيه جديد فوق تنبيه جارٍ: أزِل مؤقتات السابق ومراقبه حتى لا يتراكما
         try { stopper?.let { h.removeCallbacks(it) } } catch (_: Exception) {}
@@ -60,7 +63,7 @@ class AlarmService : Service() {
         startForegroundNotif(mode, title, text)
         acquireWake()
         forceStreamVolume(forceMax)
-        startAudio(mode, uriStr, loop, volStart, rampSec)
+        startAudio(mode, uriStr, resId, loop, volStart, rampSec)
         if (vibrate) startVibrate()
         // زر الصوت: يوقف الأذان (سلوك متوقَّع)، ولا يُسكت الإيقاظ (يُعاد رفعه)
         guardVol = (mode == "wake")
@@ -69,7 +72,8 @@ class AlarmService : Service() {
         if (autoStopMs > 0) {
             stopper = Runnable {
                 // الإيقاظ لا يستسلم: إن انقضى الوقت ولم تُوقفه بالتحدّي، يعود بعد قليل.
-                if (curMode == "wake") {
+                // لكن التجربة لا تُجدول معاودات حقيقية — وإلا صار الاختبار منبّهاً فعلياً.
+                if (curMode == "wake" && !isTest) {
                     val left = Prefs.wakeRetriesLeft(this)
                     if (left > 0) {
                         Prefs.setWakeRetriesLeft(this, left - 1)
@@ -102,10 +106,18 @@ class AlarmService : Service() {
             .setContentTitle(title).setContentText(text)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_ALARM)
-            .setContentIntent(if (wake) wakeScreenPi(title, text) else open)
-        // في الإيقاظ لا يوجد زر إيقاف في الشعار — الإيقاف يمرّ بشاشة التحدّي وحدها،
-        // وإلا أسكتّه من ستارة الإشعارات وأنت نصف نائم وعدت للنوم.
-        if (!wake) b.addAction(R.drawable.ic_notify, "🛑 إيقاف الأذان", stopPi)
+        if (wake) {
+            // شاشة الإيقاظ فوق القفل تُطلَق من هذا الإشعار مباشرةً (full-screen intent).
+            // كانت سابقاً في إشعار منفصل بنفس المعرّف ID_WAKE فيدهسه إشعار الخدمة — سباقٌ هشّ.
+            // الآن إشعار واحد يحمل الشاشة والصوت معاً.
+            val wpi = wakeScreenPi(title, text)
+            b.setContentIntent(wpi).setFullScreenIntent(wpi, true)
+        } else {
+            // في الإيقاظ لا يوجد زر إيقاف في الشعار — الإيقاف يمرّ بشاشة التحدّي وحدها،
+            // وإلا أسكتّه من ستارة الإشعارات وأنت نصف نائم وعدت للنوم.
+            b.setContentIntent(open)
+            b.addAction(R.drawable.ic_notify, "🛑 إيقاف الأذان", stopPi)
+        }
         val n = b.build()
         val id = if (mode == "wake") Notif.ID_WAKE else Notif.ID_ADHAN
         if (Build.VERSION.SDK_INT >= 29) {
@@ -168,7 +180,7 @@ class AlarmService : Service() {
         } catch (_: Exception) {}
     }
 
-    private fun startAudio(mode: String, uriStr: String, loop: Boolean, volStart: Int, rampSec: Int) {
+    private fun startAudio(mode: String, uriStr: String, resId: Int, loop: Boolean, volStart: Int, rampSec: Int) {
         try {
             mp?.release()
             val p = MediaPlayer()
@@ -178,9 +190,14 @@ class AlarmService : Service() {
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build()
             )
+            // الأولوية: مورد مضمّن مختار (أذان الحرمين / تنبيه قوي) ← ملف المستخدم ← النغمة الافتراضية
             var usedFallback = false
             try {
-                if (uriStr.isNotEmpty()) {
+                if (resId != 0) {
+                    val afd = resources.openRawResourceFd(resId)
+                    p.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    afd.close()
+                } else if (uriStr.isNotEmpty()) {
                     p.setDataSource(this, Uri.parse(uriStr))
                 } else usedFallback = true
             } catch (_: Exception) { usedFallback = true }

@@ -82,6 +82,11 @@ class AlarmBridge(private val ctx: Context) {
             o.put("adhanUri", Prefs.adhanUri(ctx))
             o.put("adhanVol", Prefs.adhanVol(ctx))
             o.put("adhanStopSec", Prefs.adhanStopSec(ctx))
+            o.put("adhanSound", Prefs.adhanSound(ctx))
+            o.put("adhanMakkiOk", SoundLib.rawId(ctx, "adhan_makki") != 0)
+            o.put("adhanMadaniOk", SoundLib.rawId(ctx, "adhan_madani") != 0)
+            o.put("adhanTakbeer", Prefs.adhanTakbeer(ctx))
+            o.put("adhanTakbeerSec", Prefs.adhanTakbeerSec(ctx))
 
             o.put("wakeOn", Prefs.wakeOn(ctx))
             o.put("wakeMode", Prefs.wakeMode(ctx))
@@ -89,6 +94,8 @@ class AlarmBridge(private val ctx: Context) {
             o.put("wakeTime", Prefs.wakeTime(ctx))
             o.put("wakeDays", Prefs.wakeDays(ctx))
             o.put("wakeUri", Prefs.wakeUri(ctx))
+            o.put("wakeSound", Prefs.wakeSound(ctx))
+            o.put("wakeStrongOk", SoundLib.rawId(ctx, "wake_strong") != 0)
             o.put("wakeVolStart", Prefs.wakeVolStart(ctx))
             o.put("wakeRamp", Prefs.wakeRamp(ctx))
             o.put("wakeForceMax", Prefs.wakeForceMax(ctx))
@@ -139,6 +146,11 @@ class AlarmBridge(private val ctx: Context) {
                 "wakeRetryMin" -> e.putInt(Prefs.K_WAKE_RETRY_MIN, value.toIntOrNull() ?: 3)
                 "adhanUri" -> e.putString(Prefs.K_ADHAN_URI, value)
                 "wakeUri" -> e.putString(Prefs.K_WAKE_URI, value)
+                // اختيار أذان الحرمين المضمّن أو الافتراضي أو ملف المستخدم
+                "adhanSound" -> e.putString(Prefs.K_ADHAN_SOUND, value)
+                "adhanTakbeer" -> e.putBoolean(Prefs.K_ADHAN_TAKBEER, value == "1")
+                "adhanTakbeerSec" -> e.putInt(Prefs.K_ADHAN_TAKBEER_SEC, (value.toIntOrNull() ?: 12).coerceIn(4, 40))
+                "wakeSound" -> e.putString(Prefs.K_WAKE_SOUND, value)
                 else -> {
                     // adhan_<صلاة> و iqama_<صلاة> — لأسماء الصلوات المعروفة وحدها،
                     // فلا تتضخّم ملفات التفضيلات بمفاتيح لا يقرؤها أحد
@@ -151,6 +163,10 @@ class AlarmBridge(private val ctx: Context) {
             }
             e.apply()
             AlarmScheduler.rescheduleAll(ctx)
+            // تعطيل الإيقاظ يلغي أي معاودة/غفوة معلّقة (كوداها خارج قائمة الجدولة)
+            if (key == "wakeOn" && value != "1") {
+                try { AlarmScheduler.cancelWakeExtras(ctx) } catch (_: Exception) {}
+            }
         } catch (_: Exception) {}
     }
 
@@ -159,14 +175,24 @@ class AlarmBridge(private val ctx: Context) {
     fun testAlarm(mode: String) {
         try {
             val wake = mode == "wake"
+            // نفس منطق الإطلاق الحقيقي: الصوت المختار + قصّ التكبيرة إن فُعّل
+            val resId = if (wake) SoundLib.wakeRes(ctx) else SoundLib.adhanRes(ctx)
+            val uri = if (wake) {
+                if (Prefs.wakeSound(ctx) == "custom") Prefs.wakeUri(ctx) else ""
+            } else {
+                if (Prefs.adhanSound(ctx) == "custom") Prefs.adhanUri(ctx) else ""
+            }
+            val stopMs = if (!wake && Prefs.adhanTakbeer(ctx)) Prefs.adhanTakbeerSec(ctx) * 1000L else 30000L
             val i = Intent(ctx, AlarmService::class.java).apply {
                 putExtra("mode", if (wake) "wake" else "adhan")
+                putExtra("isTest", true)
                 putExtra("title", if (wake) "⏰ تجربة الإيقاظ" else "🕌 تجربة الأذان")
                 putExtra("text", "هذه تجربة — أوقفها متى شئت")
-                putExtra("uri", if (wake) Prefs.wakeUri(ctx) else Prefs.adhanUri(ctx))
+                putExtra("uri", uri)
+                putExtra("resId", resId)
                 putExtra("vol", if (wake) 100 else Prefs.adhanVol(ctx))
                 putExtra("loop", false)
-                putExtra("autoStopMs", 30000L)
+                putExtra("autoStopMs", stopMs)
                 putExtra("forceMax", false)   // التجربة لا تفرض أقصى صوت
                 putExtra("vibrate", wake && Prefs.wakeVib(ctx))
                 putExtra("volStart", if (wake) Prefs.wakeVolStart(ctx) else Prefs.adhanVol(ctx))
@@ -248,82 +274,7 @@ class AlarmBridge(private val ctx: Context) {
             .isIgnoringBatteryOptimizations(ctx.packageName)
     } catch (_: Exception) { true }
 
-    /**
-     * تسجيل الأذكار: هل صلاحية الميكروفون ممنوحة؟
-     * إن لم تكن، يُطلب من المستخدم منحها ثم تُعاد المحاولة من الصفحة.
-     */
-    @JavascriptInterface
-    fun ensureMic(): Boolean {
-        return try {
-            val granted = ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
-                android.content.pm.PackageManager.PERMISSION_GRANTED
-            if (!granted) MainActivity.askMic()
-            granted
-        } catch (_: Exception) { false }
-    }
-
-    /* ═══ تسجيل أصلي ═══
-       WebView يرفض getUserMedia لصفحات file:// مهما مُنحت أذونات النظام،
-       فالتسجيل يمرّ من هنا: نسجّل بـMediaRecorder ونسلّم الصوت للصفحة base64. */
-    private var rec: android.media.MediaRecorder? = null
-    private var recFile: File? = null
-
-    @JavascriptInterface
-    fun recSupported(): Boolean = true
-
-    @JavascriptInterface
-    fun recStart(): String {
-        try {
-            if (ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) !=
-                android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) { MainActivity.askMic(); return "perm" }
-            recCancel()
-            val f = File(ctx.cacheDir, "mtb_rec_" + System.currentTimeMillis() + ".m4a")
-            @Suppress("DEPRECATION")
-            val r = if (Build.VERSION.SDK_INT >= 31)
-                android.media.MediaRecorder(ctx) else android.media.MediaRecorder()
-            r.setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
-            r.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
-            r.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
-            r.setAudioChannels(1)
-            r.setAudioSamplingRate(44100)
-            r.setAudioEncodingBitRate(48000)
-            r.setOutputFile(f.absolutePath)
-            r.prepare()
-            r.start()
-            rec = r; recFile = f
-            return "ok"
-        } catch (e: Exception) {
-            recCancel()
-            return "err:" + (e.message ?: "")
-        }
-    }
-
-    /** يوقف التسجيل ويعيد الصوت base64 — الصفحة تحوّله Blob وتخزّنه كما هو. */
-    @JavascriptInterface
-    fun recStop(): String {
-        val f = recFile
-        try { rec?.stop() } catch (_: Exception) {}
-        try { rec?.release() } catch (_: Exception) {}
-        rec = null; recFile = null
-        return try {
-            if (f == null || !f.exists() || f.length() < 512) { f?.delete(); "" }
-            else {
-                val bytes = f.readBytes()
-                f.delete()
-                android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-            }
-        } catch (_: Exception) { try { f?.delete() } catch (_: Exception) {}; "" }
-    }
-
-    @JavascriptInterface
-    fun recCancel() {
-        try { rec?.stop() } catch (_: Exception) {}
-        try { rec?.release() } catch (_: Exception) {}
-        rec = null
-        try { recFile?.delete() } catch (_: Exception) {}
-        recFile = null
-    }
+    /* أُزيل نظام تسجيل الأذكار الصوتية بالكامل (الميكروفون وMediaRecorder) — الأذكار والأدعية نصّية الآن. */
 
     /** ملء الشاشة: يخفي/يُظهر أشرطة النظام (WebView لا يستطيع ذلك بنفسه). */
     @JavascriptInterface

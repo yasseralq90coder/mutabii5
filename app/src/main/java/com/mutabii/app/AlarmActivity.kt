@@ -188,6 +188,8 @@ class AlarmActivity : Activity() {
         stopSound()
         Prefs.setSnoozeUsed(this, 0)
         Prefs.resetWakeRetries(this)   // قُمتَ فعلاً — أوقف المعاودات
+        // ألغِ أي معاودة/غفوة معلّقة، وإلا رنّت بعد أن نهضت فعلاً
+        try { AlarmScheduler.cancelWakeExtras(this) } catch (_: Exception) {}
         try { AlarmScheduler.rescheduleAll(this) } catch (_: Exception) {}
         finish()
     }

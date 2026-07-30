@@ -36,19 +36,6 @@ class MainActivity : android.app.Activity() {
             a.runOnUiThread { a.applyImmersive(full) }
         }
 
-        /**
-         * يطلب صلاحية الميكروفون لتسجيل الأذكار.
-         * WebView لا يفتح الميكروفون إطلاقاً قبل منح صلاحية النظام، حتى مع onPermissionRequest.
-         */
-        fun askMic() {
-            val a = current?.get() ?: return
-            a.runOnUiThread {
-                try { a.requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_MIC) }
-                catch (_: Exception) {}
-            }
-        }
-
-        const val REQ_MIC = 103
         const val REQ_LOC = 104
         const val REQ_SOUND = 556
 
@@ -236,23 +223,11 @@ class MainActivity : android.app.Activity() {
         }
 
         /**
-         * لا نمنح إلا الميكروفون، ولا نمنحه إلا لصفحتنا وبعد أن يمنحه النظام أصلاً.
-         * المنح الأعمى لكل ما يُطلب كان يشمل الكاميرا وحماية المحتوى لأي أصل.
+         * لا نمنح الصفحة أيّ صلاحية جهاز (ميكروفون/كاميرا) — نظام التسجيل الصوتي أُزيل،
+         * والصفحة لا تحتاج getUserMedia إطلاقاً، فنرفض كل طلب توسّعاً في الحماية.
          */
         override fun onPermissionRequest(request: PermissionRequest?) {
-            val r = request ?: return
-            try {
-                val origin = r.origin?.toString() ?: ""
-                val ours = origin.startsWith("file://")
-                val micOk = checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
-                    PackageManager.PERMISSION_GRANTED
-                val wanted = r.resources.filter {
-                    it == PermissionRequest.RESOURCE_AUDIO_CAPTURE && ours && micOk
-                }.toTypedArray()
-                if (wanted.isEmpty()) r.deny() else r.grant(wanted)
-            } catch (_: Exception) {
-                try { r.deny() } catch (_: Exception) {}
-            }
+            try { request?.deny() } catch (_: Exception) {}
         }
 
         /**
@@ -298,7 +273,9 @@ class MainActivity : android.app.Activity() {
                         )
                     } catch (_: Exception) {}
                     val key = if (soundTarget == "wake") Prefs.K_WAKE_URI else Prefs.K_ADHAN_URI
-                    try { Prefs.sp(this).edit().putString(key, uri.toString()).apply() }
+                    val soundKey = if (soundTarget == "wake") Prefs.K_WAKE_SOUND else Prefs.K_ADHAN_SOUND
+                    // اختيار ملف = تحويل المصدر إلى «custom» ليأخذ الأثر فوراً على التنبيهات
+                    try { Prefs.sp(this).edit().putString(key, uri.toString()).putString(soundKey, "custom").apply() }
                     catch (_: Exception) {}
                     val nm = if (soundTarget == "wake") "الإيقاظ" else "الأذان"
                     try { Toast.makeText(this, "✅ ضُبط صوت $nm", Toast.LENGTH_SHORT).show() }
@@ -350,11 +327,6 @@ class MainActivity : android.app.Activity() {
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQ_MIC) {
-            val ok = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            try { web?.evaluateJavascript("window.__mtbMicResult && window.__mtbMicResult($ok);", null) }
-            catch (_: Exception) {}
-        }
         if (requestCode == REQ_LOC) {
             val ok = grantResults.isNotEmpty() &&
                 grantResults.any { it == PackageManager.PERMISSION_GRANTED }

@@ -193,6 +193,26 @@ object AlarmScheduler {
         } catch (_: Exception) {}
     }
 
+    /**
+     * يلغي منبّهات معاودة الإيقاظ (٧٠٠٠٠) والغفوة (٨٠٠٠٠) المعلّقة.
+     * هذان الكودان خارج قائمة mtb_sched عمداً (ليبقيا بعد إعادة الجدولة الدورية)،
+     * فلا يمسّهما cancelAll — لذا نلغيهما صراحةً حين تقوم فعلاً أو تُطفئ الإيقاظ،
+     * وإلا رنّت معاودة بعد أن قمتَ ونهضت.
+     */
+    fun cancelWakeExtras(c: Context) {
+        try {
+            val am = c.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            for (code in intArrayOf(CODE_BASE + 70000, CODE_BASE + 80000)) {
+                val base = Intent(c, AlarmReceiver::class.java).apply { action = ACTION_FIRE }
+                val pi = PendingIntent.getBroadcast(
+                    c, code, base,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                ) ?: continue
+                am.cancel(pi); pi.cancel()
+            }
+        } catch (_: Exception) {}
+    }
+
     /** جدولة غفوة لمرة واحدة. */
     fun scheduleSnooze(c: Context, minutes: Int) {
         try {

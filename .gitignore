@@ -5,3 +5,6 @@ local.properties
 .idea/
 *.iml
 out/
+
+# أدوات Claude Code المحلية
+.claude/

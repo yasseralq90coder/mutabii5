@@ -15,6 +15,9 @@ object Prefs {
     const val K_ADHAN_URI = "adhan_uri"
     const val K_ADHAN_VOL = "adhan_vol"
     const val K_ADHAN_STOP = "adhan_stop_sec"
+    const val K_ADHAN_SOUND = "adhan_sound"          // builtin | makki | madani | custom
+    const val K_ADHAN_TAKBEER = "adhan_takbeer"       // التكبيرة فقط (قصّ أول مدّة)
+    const val K_ADHAN_TAKBEER_SEC = "adhan_takbeer_sec"
 
     const val K_WAKE_ON = "wake_on"
     const val K_WAKE_MODE = "wake_mode"        // fajr | time
@@ -22,6 +25,7 @@ object Prefs {
     const val K_WAKE_TIME = "wake_time"        // HH:mm
     const val K_WAKE_DAYS = "wake_days"        // "1,2,3,4,5,6,7" (1=أحد..7=سبت)
     const val K_WAKE_URI = "wake_uri"
+    const val K_WAKE_SOUND = "wake_sound"      // builtin | strong | custom
     const val K_WAKE_VOLSTART = "wake_volstart"
     const val K_WAKE_RAMP = "wake_ramp"
     const val K_WAKE_FORCEMAX = "wake_forcemax"
@@ -50,6 +54,15 @@ object Prefs {
     fun adhanUri(c: Context): String = sp(c).getString(K_ADHAN_URI, "") ?: ""
     fun adhanVol(c: Context) = sp(c).getInt(K_ADHAN_VOL, 90)
     fun adhanStopSec(c: Context) = sp(c).getInt(K_ADHAN_STOP, 180)
+    /** أي أذان يُشغَّل: builtin (النغمة الافتراضية) | makki | madani | custom (ملف المستخدم).
+     *  توافقاً مع الإصدارات القديمة: إن لم يُحدَّد صراحةً ووُجد ملف مخصّص، فهو custom. */
+    fun adhanSound(c: Context): String {
+        val s = sp(c).getString(K_ADHAN_SOUND, null)
+        if (!s.isNullOrEmpty()) return s
+        return if (adhanUri(c).isNotEmpty()) "custom" else "builtin"
+    }
+    fun adhanTakbeer(c: Context) = sp(c).getBoolean(K_ADHAN_TAKBEER, false)
+    fun adhanTakbeerSec(c: Context) = sp(c).getInt(K_ADHAN_TAKBEER_SEC, 12).coerceIn(4, 40)
 
     fun wakeOn(c: Context) = sp(c).getBoolean(K_WAKE_ON, false)
     fun wakeMode(c: Context): String = sp(c).getString(K_WAKE_MODE, "fajr") ?: "fajr"
@@ -57,6 +70,12 @@ object Prefs {
     fun wakeTime(c: Context): String = sp(c).getString(K_WAKE_TIME, "04:30") ?: "04:30"
     fun wakeDays(c: Context): String = sp(c).getString(K_WAKE_DAYS, "1,2,3,4,5,6,7") ?: "1,2,3,4,5,6,7"
     fun wakeUri(c: Context): String = sp(c).getString(K_WAKE_URI, "") ?: ""
+    /** صوت الإيقاظ: builtin (الافتراضي) | strong (تنبيه قوي جداً مضمّن) | custom (ملف المستخدم). */
+    fun wakeSound(c: Context): String {
+        val s = sp(c).getString(K_WAKE_SOUND, null)
+        if (!s.isNullOrEmpty()) return s
+        return if (wakeUri(c).isNotEmpty()) "custom" else "builtin"
+    }
     fun wakeVolStart(c: Context) = sp(c).getInt(K_WAKE_VOLSTART, 30)
     fun wakeRamp(c: Context) = sp(c).getInt(K_WAKE_RAMP, 45)
     fun wakeForceMax(c: Context) = sp(c).getBoolean(K_WAKE_FORCEMAX, true)

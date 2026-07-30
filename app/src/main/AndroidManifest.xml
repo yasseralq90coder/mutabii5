@@ -14,8 +14,6 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
-    <!-- تسجيل الأذكار بصوت المستخدم داخل الـWebView (MediaRecorder) -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- «استخدم موقعي الحالي» لحساب المواقيت — WebView لا يمنح الموقع بلا إذن النظام -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
