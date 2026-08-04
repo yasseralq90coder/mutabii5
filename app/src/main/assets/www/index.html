@@ -294,6 +294,12 @@ body.fs-xl{zoom:1.22}
 @media(prefers-reduced-motion:reduce){.plAy{transition:none}}
 /* ═══ قوس اليوم ═══ */
 .arcCard{margin:10px 13px 0;background:linear-gradient(165deg,rgba(46,36,23,.72),rgba(24,19,11,.72));border:1px solid var(--br);border-radius:20px;padding:6px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.045)}
+/* نبض اليوم — شريط تقدّم بلمحة */
+.pulse{display:flex;gap:7px;margin:12px 13px 0}
+.pchip{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 3px;border-radius:12px;border:1px solid var(--br);background:var(--c2)}
+.pchip .pe{font-size:17px}.pchip .pl{font-size:9.5px;color:var(--mu)}.pchip .pv{font-size:12px;font-weight:900;color:var(--mu)}
+.pchip.on{border-color:var(--g2);background:rgba(107,147,98,.12)}.pchip.on .pv{color:var(--g)}
+.pchip.part{border-color:var(--gbr)}.pchip.part .pv{color:var(--go)}
 .arcw{margin:0 -2px}
 .arcSvg{width:100%;height:auto;display:block;overflow:visible}
 #arcFill{transition:stroke-dasharray .9s cubic-bezier(.4,0,.2,1)}
@@ -575,6 +581,25 @@ const QL=[["Hسُورَةُ ٱلْفَاتِحَةِ","Tبِسْمِ ٱللَّ�
 /* ═══════════════ الثوابت ═══════════════ */
 function locDate(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 let TODAY=locDate();
+/* بداية اليوم: 'fajr' (افتراضي) أو 'midnight' — من إعدادات المستخدم */
+function dayStartMode(){try{return (data&&data.settings&&data.settings.dayStart)||'fajr';}catch(e){return 'fajr';}}
+/* «يوم العبادة»: ما قبل فجر اليوم (تهجّد/وتر/قراءة ليلية) يُحسب لليوم السابق.
+   يعتمد على مواقيت اليوم الميلادي (times.fajr)؛ إن لم تجهز بعد يرجع للحدّ الميلادي مؤقتاً. */
+function worshipDate(dt){
+ dt=dt||new Date();
+ if(dayStartMode()!=='fajr')return locDate(dt);
+ var fs=t2s(times&&times.fajr);
+ if(fs>=99999)return locDate(dt);
+ var nowS=dt.getHours()*3600+dt.getMinutes()*60+dt.getSeconds();
+ if(nowS<fs)return locDate(new Date(dt.getTime()-86400000));
+ return locDate(dt);
+}
+/* هل نحن الآن بين منتصف الليل وفجر اليوم (والحدّ = الفجر)؟ */
+function preFajr(){
+ if(dayStartMode()!=='fajr')return false;
+ var fs=t2s(times&&times.fajr);if(fs>=99999)return false;
+ var n=new Date();return (n.getHours()*3600+n.getMinutes()*60+n.getSeconds())<fs;
+}
 function escH(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function hjDay(dn){return dn.toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{day:'numeric'});}
 const LOC_MAKKAH={lat:21.3891,lng:39.8579,tz:3,name:'مكة المكرمة'};
@@ -627,7 +652,9 @@ const TAHLIL='لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ �
 
 const ADK_SABAH=[
  {id:'s1',n:'آية الكرسي',t:KURSI,c:1,r:'النسائي وابن حبان'},
- {id:'s2',n:'المعوذات الثلاث',t:MUAW,c:3,r:'أبو داود والترمذي'},
+ {id:'s2a',n:'سورة الإخلاص',t:IKHLAS,c:3,r:'أبو داود والترمذي'},
+ {id:'s2b',n:'سورة الفلق',t:FALAQ,c:3,r:'أبو داود والترمذي'},
+ {id:'s2c',n:'سورة الناس',t:NAS,c:3,r:'أبو داود والترمذي'},
  {id:'s3',n:'دعاء الصباح',t:'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، '+TAHLIL+'، رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذَا الْيَوْمِ وَخَيْرَ مَا بَعْدَهُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ',c:1,r:'مسلم'},
  {id:'s4',n:'اللهم بك أصبحنا',t:'اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ النُّشُورُ',c:1,r:'الترمذي'},
  {id:'s5',n:'سيد الاستغفار',t:SAYYID,c:1,r:'البخاري'},
@@ -650,7 +677,9 @@ const ADK_SABAH=[
 ];
 const ADK_MASA=[
  {id:'m1',n:'آية الكرسي',t:KURSI,c:1,r:'النسائي وابن حبان'},
- {id:'m2',n:'المعوذات الثلاث',t:MUAW,c:3,r:'أبو داود والترمذي'},
+ {id:'m2a',n:'سورة الإخلاص',t:IKHLAS,c:3,r:'أبو داود والترمذي'},
+ {id:'m2b',n:'سورة الفلق',t:FALAQ,c:3,r:'أبو داود والترمذي'},
+ {id:'m2c',n:'سورة الناس',t:NAS,c:3,r:'أبو داود والترمذي'},
  {id:'m3',n:'دعاء المساء',t:'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، '+TAHLIL+'، رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذِهِ اللَّيْلَةِ وَخَيْرَ مَا بَعْدَهَا، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذِهِ اللَّيْلَةِ وَشَرِّ مَا بَعْدَهَا',c:1,r:'مسلم'},
  {id:'m4',n:'اللهم بك أمسينا',t:'اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ',c:1,r:'الترمذي'},
  {id:'m5',n:'سيد الاستغفار',t:SAYYID,c:1,r:'البخاري'},
@@ -680,8 +709,12 @@ const ADK_SALAH=[
  {id:'p8',n:'آية الكرسي',t:KURSI,c:1,r:'النسائي — لم يمنعه من دخول الجنة إلا أن يموت'},
  {id:'p9',n:'اللهم أعني على ذكرك',t:'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ',c:1,r:'أبو داود'},
  {id:'p10',n:'التهليل ١٠ مرات',t:'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، يُحْيِي وَيُمِيتُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ',c:10,r:'الترمذي',only:['fajr','maghrib']},
- {id:'p11',n:'المعوذات (٣ مرات)',t:MUAW,c:3,r:'أبو داود والترمذي',only:['fajr','maghrib']},
- {id:'p12',n:'المعوذات (مرة)',t:MUAW,c:1,r:'أبو داود',only:['dhuhr','asr','isha']},
+ {id:'p11a',n:'سورة الإخلاص',t:IKHLAS,c:3,r:'أبو داود والترمذي',only:['fajr','maghrib']},
+ {id:'p11b',n:'سورة الفلق',t:FALAQ,c:3,r:'أبو داود والترمذي',only:['fajr','maghrib']},
+ {id:'p11c',n:'سورة الناس',t:NAS,c:3,r:'أبو داود والترمذي',only:['fajr','maghrib']},
+ {id:'p12a',n:'سورة الإخلاص',t:IKHLAS,c:1,r:'أبو داود',only:['dhuhr','asr','isha']},
+ {id:'p12b',n:'سورة الفلق',t:FALAQ,c:1,r:'أبو داود',only:['dhuhr','asr','isha']},
+ {id:'p12c',n:'سورة الناس',t:NAS,c:1,r:'أبو داود',only:['dhuhr','asr','isha']},
 ];
 const DHIKRS=[
  {id:'d1',s:'سبحان الله',t:'سُبْحَانَ اللَّهِ',b:'أحب الكلام إلى الله',r:'متفق عليه'},
@@ -806,7 +839,7 @@ function pTimes(date){
 
 /* حارس منتصف الليل: يوم جديد بلا إعادة تحميل — يحافظ على الصوت والقراءة الجارية */
 function dayRollover(){
- const nd=locDate();
+ const nd=worshipDate();
  if(nd===TODAY)return;
  const old=TODAY;TODAY=nd;
  ['adhDate','selDate','dhikrDate'].forEach(function(k){if(ui[k]===old)ui[k]=nd;});
@@ -889,7 +922,7 @@ function save(){
  }
 }
 function hydrate(d){
- return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,pin:undefined};
+ return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,dayStart:'fajr',...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,pin:undefined};
 }
 let _loadState='ok';
 function load(){
@@ -1493,9 +1526,14 @@ async function qadSection(){
  return '<div style="margin-bottom:16px">'+h+'</div>';
 }
 function adhList(){
- if(ui.adhTab==='sabah')return ADK_SABAH;
- if(ui.adhTab==='masa')return ADK_MASA;
- return ADK_SALAH.filter(a=>!a.only||a.only.includes(ui.adhSalah));
+ let list;
+ if(ui.adhTab==='sabah')list=ADK_SABAH;
+ else if(ui.adhTab==='masa')list=ADK_MASA;
+ else list=ADK_SALAH.filter(a=>!a.only||a.only.includes(ui.adhSalah));
+ /* من باب التسهيل: الأذكار مرة واحدة أولاً، والمكرّرة (تحتاج عدّاً) في الأسفل —
+    ترتيب ثابت داخل كل مجموعة فلا يختلّ تسلسلها الأصلي */
+ const once=list.filter(a=>(a.c||1)<=1), reps=list.filter(a=>(a.c||1)>1);
+ return once.concat(reps);
 }
 function adhStateKey(item){return ui.adhTab==='salah'?('salah-'+ui.adhSalah+'-'+item.id):(ui.adhTab+'-'+item.id);}
 /* حالة الأذكار التفصيلية تخزن في rec.adhkarDone={key:true} + الملخص rec.adhkar={sabah:0|1|2,...} */
@@ -1899,7 +1937,11 @@ function openSettings(){
    +seg('settoast',[['top','⬆️ الأعلى'],['mid','⏺️ الوسط'],['bot','⬇️ الأسفل']],data.toastPos||'top'));
  }
  else if(T==='prayer'){
-  body=card('🔔 التنبيهات',
+  body=card('🌅 بداية اليوم',
+    '<div style="padding:12px 12px 4px;font-size:12px;font-weight:800;color:var(--mu)">متى يبدأ يومك الجديد؟</div>'
+   +seg('setdaystart',[['fajr','🌅 الفجر'],['midnight','🕛 منتصف الليل']],dayStartMode())
+   +'<div style="padding:2px 12px 12px;font-size:10.5px;color:var(--mu);line-height:1.7">«الفجر»: العبادة بعد منتصف الليل وقبل الفجر (تهجّد/وتر/قراءة) تُحسب لليوم السابق.</div>')
+  +card('🔔 التنبيهات',
     row('alrmodal','🔔','التنبيهات والأذان والإيقاظ',(data.alerts&&data.alerts.on)?'مُفعّلة ✓':'مُعطّلة')
    +row('editiqama','⏱️','مدد الإقامة بعد الأذان','لكل صلاة على حدة')
    +((window.MTBNative&&MTBNative.openSettings)?row('nativealarm','⚙️','إعدادات النظام (تنبيهات دقيقة والبطارية)','مطلوبة لعمل الأذان والإيقاظ والتطبيق مغلق'):''))
@@ -2058,9 +2100,11 @@ function renderHeader(){
  const wr=Math.min(1,(td.read||0)/_T);
  const dtot=Object.values(data.dailyDhikr[TODAY]||{}).reduce((a,b)=>a+b,0);
  const dh=Math.min(1,dtot/100);
- const hj=new Date().toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const hj=new Date(TODAY+'T12:00:00').toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ /* قبل الفجر: يوم العبادة ما زال أمس — نلمّح لليلة الحالية بلا لبس */
+ const nightHint=preFajr()?'<span style="font-size:11px;color:var(--tl);font-weight:800;margin-inline-start:6px">🌙 ليلة '+new Date().toLocaleDateString('ar-SA',{weekday:'long'})+'</span>':'';
  return '<div class="hdr2">'
- +'<div class="dt" data-act="tab" data-v="salah"><b>'+hj+'</b><span>'+curLocName()+' • '+PN[clk.ni]+' بعد <span id="cdH">'+(clk.cd||'')+'</span> ⏰</span>'
+ +'<div class="dt" data-act="tab" data-v="salah"><b>'+hj+'</b>'+nightHint+'<span>'+curLocName()+' • '+PN[clk.ni]+' بعد <span id="cdH">'+(clk.cd||'')+'</span> ⏰</span>'
  +'<div class="hIcons"><button data-act="opensearch">🔍</button><button data-act="opensettings">⚙️</button><button data-act="gototoday">🏠</button></div></div>'
  +'<div class="rng">'+ring3(pr,'var(--g)','🕌')+ring3(wr,'var(--go)','📖')+ring3(dh,'var(--tl)','📿')+'</div>'
  +'</div>';
@@ -2133,13 +2177,15 @@ function dayThread(rec){
   return [CX+R*Math.cos(th),CY-R*Math.sin(th)];
  };
  const frac=function(s){return Math.max(0,Math.min(1,(s-a)/(b-a)));};
- const nowP=frac(nowS),nowPt=pt(nowP);
+ /* قبل الفجر: يوم العبادة انتهى — القوس مكتمل والعلامة في نهايته، والعدّ في المركز يشير إلى الفجر */
+ const pf=preFajr();
+ const nowP=pf?1:frac(nowS),nowPt=pt(nowP);
 
  /* نقاط الصلوات على القوس */
  let dots='';
  PK.forEach(function(k,i){
   const p=frac(S(k)),c=pt(p),done=!!((rec.p||[])[i]);
-  const passed=nowS>=S(k);
+  const passed=pf?false:(nowS>=S(k));
   const fillC=done?'var(--g)':(passed?'rgba(194,91,78,.22)':'rgba(42,33,22,.9)');
   const strokeC=done?'var(--g)':(passed?'var(--rd)':'#5a4a32');
   dots+='<g class="arcDot" data-act="togpray" data-i="'+i+'" style="cursor:pointer">'
@@ -2210,7 +2256,7 @@ function arcTick(nowS){
  const f=document.getElementById('arcFill');if(!f)return;
  const CX=150,CY=142,R=120,ARC=Math.PI*R;
  const a=t2s(times.fajr),b=t2s(times.isha)+5400;
- const p=Math.max(0,Math.min(1,(nowS-a)/(b-a)));
+ const p=preFajr()?1:Math.max(0,Math.min(1,(nowS-a)/(b-a)));
  f.setAttribute('stroke-dasharray',(ARC*p).toFixed(1)+' '+ARC.toFixed(1));
  const th=Math.PI*(1-p),x=CX+R*Math.cos(th),y=CY-R*Math.sin(th);
  const g=document.getElementById('arcNow');
@@ -2285,6 +2331,22 @@ function sunnahItemsToday(rec){
   return '<div class="si'+(d?' dn':'')+'" data-act="togsun" data-key="'+x.k+'"><span style="font-size:17px">'+(d?'✅':'⬜')+'</span><div><div style="font-size:14px;font-weight:700;color:'+(d?'var(--g)':'var(--tx)')+'">'+nm+'</div><div style="font-size:11px;color:var(--mu)">'+nt+'</div></div></div>';
  }).join('');
 }
+/* نبض اليوم: تقدّم الصلوات والأذكار والورد والوتر بلمحة */
+function pulseStrip(rec){
+ const p=(rec.p||[]).filter(Boolean).length;
+ const ad=rec.adhkar||{},sabahOk=ad.sabah===2,masaOk=ad.masa===2;
+ const adTxt=(sabahOk&&masaOk)?'✓ ✓':(sabahOk?'صباح ✓':(masaOk?'مساء ✓':'—'));
+ const adCls=(sabahOk&&masaOk)?'on':((sabahOk||masaOk)?'part':'');
+ const read=rec.read||0,T=dailyTarget().T,wirdOk=read>=T&&read>0;
+ const wt=!!(rec.sunnah||{}).wt;
+ const chip=function(cls,e,v,l){return '<div class="pchip'+(cls?' '+cls:'')+'"><span class="pe">'+e+'</span><span class="pv">'+v+'</span><span class="pl">'+l+'</span></div>';};
+ return '<div class="pulse">'
+  +chip(p>=5?'on':(p>0?'part':''),'🕌',arNum(p)+'/٥','الصلوات')
+  +chip(adCls,'📿',adTxt,'الأذكار')
+  +chip(wirdOk?'on':(read>0?'part':''),'📖',read>0?arNum(read)+' ص':'—','الورد')
+  +chip(wt?'on':'','🌙',wt?'✓':'—','الوتر')
+  +'</div>';
+}
 function renderToday(){
  if(ui.selDate!==TODAY)return renderTodayClassic();
  const rec=getRec(TODAY);
@@ -2356,14 +2418,16 @@ ui._kun='';
  })();
  /* ★ الترتيب: الورد ← الصلوات وأذكار بعدها ← السنن ← البقية */
  const nudgeBanner=homeNudgeBanner();
+ /* الترتيب المعتمد: بطاقة الآن ← نبض اليوم ← قوس اليوم (المحور) ← القرآن ← السنن ← تذكيرات نصّية أسفل */
  return nowCard()+bkNote+nudgeBanner
  +'<div class="hero2">'+heroNow(rec)+'</div>'
- +duo
- +missNote
+ +pulseStrip(rec)
  +dayThread(rec)
+ +missNote
+ +duo
  +'<div style="margin:12px 13px 0">'+sect('sunT','📿','السنن الرواتب — اليوم كاملاً','<div class="sg">'+sunnahItemsToday(rec)+'</div>')+'</div>'
- +duaContextCard()
  +soft
+ +duaContextCard()
  +'<div style="margin:10px 13px 0">'+pastWrap('today',dayChips,false)+'</div>'
  +lastBk+feed+ui._kun;
 }
@@ -5202,6 +5266,7 @@ document.addEventListener('click',function(e){
   case 'nudgeopen':nudgeShow(el.dataset.k);break;
   case 'openguide':openGuide();break;
   case 'settoast':data.toastPos=el.dataset.v;save();openSettings();toast('🔔 هكذا ستظهر التنبيهات');break;
+  case 'setdaystart':data.settings=data.settings||{};data.settings.dayStart=el.dataset.v;save();try{TODAY=worshipDate();}catch(e){}ui.cnts={};openSettings();toast(el.dataset.v==='fajr'?'🌅 يبدأ يومك من الفجر — تُحسب عبادة ما قبله لليوم السابق':'🕛 يبدأ يومك من منتصف الليل');break;
   case 'qadstart':qadStart();setTimeout(function(){openSettings();setTimeout(qadPaint,80);},50);break;
   case 'qadpause':qadPause();openSettings();break;
   case 'qadresume':qadResume();openSettings();break;
@@ -6654,6 +6719,8 @@ if(_loadState!=='ok'){
  },900);
 }
 applyLoc();
+/* بعد جهوز المواقيت: اضبط اليوم على «يوم العبادة» (حدّ الفجر) قبل أول رسم */
+try{TODAY=worshipDate();}catch(e){}
 render();
 resolveReciters();
 updateClock();
@@ -6695,7 +6762,7 @@ function _busy(){
 }
 let _dayPend=false;
 function _dayCheck(){
- if(locDate()===TODAY)return;
+ if(worshipDate()===TODAY)return;
  try{save();}catch(e){}
  if(_busy()){
   if(!_dayPend){_dayPend=true;toast('🌙 دخل يوم جديد — سيُحدَّث التطبيق فور انتهائك (بياناتك محفوظة)','warn');}
