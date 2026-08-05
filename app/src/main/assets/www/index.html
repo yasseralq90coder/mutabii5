@@ -5442,6 +5442,7 @@ document.addEventListener('click',function(e){
    const bd2=document.querySelector('.qbody');if(bd2)bd2.scrollTop=st;
   }break;
   case 'qtafsir':{if(reader)openTafsir(reader.page);}break;
+  case 'ayatafsir':{ayahLoadTafsir(el.dataset.sa);}break;
   case 'mzoomreset':{data.mScale=1;save();render();requestAnimationFrame(fitMadina);}break;
   case 'mzoom':{
    const cur=Math.round((+data.mScale||1)*100);
@@ -6255,19 +6256,24 @@ document.addEventListener('visibilitychange',function(){
   if(away>10000){try{toast('▶️ استُؤنِفت القراءة — لم يُحسب وقت غيابك ('+fmtDurLong(away)+')','ok',2200);}catch(e){}}
  }
 });
-/* اللمسة المطوّلة على الآية = التفسير الميسّر + الوسم (منبثق) */
+/* اللمسة المطوّلة على الآية = بطاقة الآية (زر التفسير + الوسوم + التدبر) — بلا جلب تلقائي للتفسير */
 function ayahSpotlight(sa){
  const bd=document.querySelector('.qbody');const st=bd?bd.scrollTop:0;
  ui.selAyah={sa:sa,p:(typeof reader!=='undefined'&&reader)?reader.page:0};
+ ui.spotlightTafsir=null; /* لا يظهر التفسير إلا عند الضغط على زره */
  const seg=document.querySelector('.mseg[data-sa="'+sa+'"]');
  if(seg){const rect=seg.getBoundingClientRect();ui.spotlightPos=(rect.top<window.innerHeight/2)?'bottom':'top';}
- window.tafsirState=window.tafsirState||{cache:{}};
- if(!tafsirState.cache[sa]){
-  ui.spotlightTafsir='<div style="text-align:center;color:#8a6d1f;animation:pulse 1.5s infinite">جارٍ جلب التفسير الميسر...</div>';
-  fetch('https://api.alquran.cloud/v1/ayah/'+sa+'/ar.muyassar').then(function(r){return r.json();}).then(function(j){tafsirState.cache[sa]=(j&&j.data&&j.data.text)||'تعذر الجلب';if(ui.selAyah&&ui.selAyah.sa===sa){ui.spotlightTafsir=tafsirState.cache[sa];render();}}).catch(function(){tafsirState.cache[sa]='تعذر الاتصال بالشبكة';if(ui.selAyah&&ui.selAyah.sa===sa){ui.spotlightTafsir=tafsirState.cache[sa];render();}});
- }else{ui.spotlightTafsir=tafsirState.cache[sa];}
  render();
  const bd2=document.querySelector('.qbody');if(bd2)bd2.scrollTop=st;
+}
+/* يجلب تفسير الآية الواحدة (الميسّر) عند الطلب ويعرضه داخل البطاقة نفسها */
+function ayahLoadTafsir(sa){
+ const bd=document.querySelector('.qbody');const st=bd?bd.scrollTop:0;
+ window.tafsirState=window.tafsirState||{cache:{}};
+ if(tafsirState.cache[sa]){ui.spotlightTafsir=tafsirState.cache[sa];render();const b0=document.querySelector('.qbody');if(b0)b0.scrollTop=st;return;}
+ ui.spotlightTafsir='<div style="text-align:center;color:#8a6d1f;animation:pulse 1.5s infinite">جارٍ جلب التفسير الميسر...</div>';
+ render();const bd1=document.querySelector('.qbody');if(bd1)bd1.scrollTop=st;
+ fetch('https://api.alquran.cloud/v1/ayah/'+sa+'/ar.muyassar').then(function(r){return r.json();}).then(function(j){tafsirState.cache[sa]=(j&&j.data&&j.data.text)||'تعذر الجلب';if(ui.selAyah&&ui.selAyah.sa===sa){ui.spotlightTafsir=tafsirState.cache[sa];render();}}).catch(function(){tafsirState.cache[sa]='تعذر الاتصال بالشبكة';if(ui.selAyah&&ui.selAyah.sa===sa){ui.spotlightTafsir=tafsirState.cache[sa];render();}});
 }
 /* كاشف اللمسة المطوّلة (~٤٥٠مللي) على الآيات — بلا التباس مع اللمسة القصيرة (الوسم) */
 (function(){
@@ -6499,11 +6505,11 @@ function renderReader(){
       +'<div style="font-size:14px;font-weight:900;color:var(--go)">آية '+arNum(_a)+' — سورة '+escH(snm)+'</div>'
       +'<button data-act="ayaunsel" style="color:var(--mu);font-size:22px;padding:4px;background:none;border:none">⨉</button>'
       +'</div>'
-      +'<div class="spotlight-tafsir">' + (ui.spotlightTafsir || '<div style="text-align:center;color:#8a6d1f;animation:pulse 1.5s infinite">جارٍ جلب التفسير...</div>') + '</div>'
+      +(ui.spotlightTafsir?'<div class="spotlight-tafsir">'+ui.spotlightTafsir+'</div>':'')
       +(marked.length?'<div style="font-size:11px;color:var(--g);background:rgba(107,147,98,.1);padding:4px 8px;border-radius:6px;display:inline-block;margin-bottom:10px">🔖 '+marked.map(m=>m.c).join('، ')+'</div>':'')
       +(tdb?'<div style="background:rgba(0,0,0,.4);border-right:3px solid var(--go);padding:10px;border-radius:4px 12px 12px 4px;font-size:12px;color:#eee;line-height:1.5;margin-bottom:10px;white-space:pre-wrap">'+escH(tdb.n)+'</div>':'')
       +'<div style="display:flex;gap:8px;margin-bottom:10px">'
-      +'<button data-act="qtafsir" style="flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:10px;border-radius:12px;font-size:12px;font-weight:700">📖 التفسير</button>'
+      +'<button data-act="ayatafsir" data-sa="'+selSA+'" style="flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:10px;border-radius:12px;font-size:12px;font-weight:700">📖 التفسير</button>'
       +'<button data-act="markopen" style="flex:1;background:linear-gradient(135deg,var(--g),var(--g2));border:none;color:#fff;padding:10px;border-radius:12px;font-size:12px;font-weight:800;box-shadow:0 4px 12px rgba(107,147,98,.3)">🔖 الوسوم والتدبر</button>'
       +'</div>'
       +'</div>';
