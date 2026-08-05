@@ -1812,7 +1812,10 @@ function familyCard(){
     +'<button data-act="kindel" data-id="'+x.k.id+'" style="color:var(--mu);font-size:14px;background:none;border:none">🗑</button>'
     +'</div>';
   });
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 2px"><span style="font-size:11px;color:var(--mu)">⏰ تذكير صلة الرحم اليومي</span><input type="time" onchange="setKinCheckTime(this.value)" value="'+escH(data.kinCheckTime||'17:00')+'" class="inp" style="width:110px;padding:6px"></div>';
+  var _kc=(data.kinCheckTime||'17:00').split(':'),_kh=parseInt(_kc[0])||17,_km=parseInt(_kc[1])||0;
+  var _kho='';for(var _i=0;_i<24;_i++)_kho+='<option value="'+_i+'"'+(_i===_kh?' selected':'')+'>'+String(_i).padStart(2,'0')+'</option>';
+  var _kmo='';for(var _mm=0;_mm<60;_mm+=5)_kmo+='<option value="'+_mm+'"'+(_mm===_km?' selected':'')+'>'+String(_mm).padStart(2,'0')+'</option>';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 2px"><span style="font-size:11px;color:var(--mu)">⏰ تذكير صلة الرحم اليومي</span><span style="display:flex;gap:5px;align-items:center"><select onchange="setKinCheckPart()" id="kinH" class="inp" style="padding:5px 6px">'+_kho+'</select><b style="color:var(--go)">:</b><select onchange="setKinCheckPart()" id="kinM" class="inp" style="padding:5px 6px">'+_kmo+'</select></span></div>';
   h+='</details>';
  }
  if(!errs.length&&!kin.length){
@@ -1826,14 +1829,35 @@ function setKinCheckTime(v){
  try{if(window.MTBNative&&MTBNative.setKinCheck)MTBNative.setKinCheck(v);}catch(e){}
  try{toast('⏰ تذكير صلة الرحم يومياً '+v,'ok');}catch(e){}
 }
+function setKinCheckPart(){
+ const h=document.getElementById('kinH'),m=document.getElementById('kinM');if(!h||!m)return;
+ setKinCheckTime(String(h.value).padStart(2,'0')+':'+String(m.value).padStart(2,'0'));
+}
+var _errDay=0;
+function errPickDay(el,day){
+ _errDay=day;
+ try{Array.prototype.forEach.call(el.parentNode.children,function(b){b.style.background='none';b.style.color='var(--mu)';b.style.borderColor='var(--br)';});
+  el.style.background='rgba(201,164,76,.15)';el.style.color='var(--go)';el.style.borderColor='var(--gbr)';}catch(e){}
+}
 function errandModal(){
+ _errDay=0;
  const defT=new Date(Date.now()+3600000);
- const hh=String(defT.getHours()).padStart(2,'0')+':'+String(defT.getMinutes()).padStart(2,'0');
+ const dh=defT.getHours(),dm=Math.round(defT.getMinutes()/5)*5%60;
+ let hopts='';for(var i=0;i<24;i++)hopts+='<option value="'+i+'"'+(i===dh?' selected':'')+'>'+String(i).padStart(2,'0')+'</option>';
+ let mopts='';for(var m=0;m<60;m+=5)mopts+='<option value="'+m+'"'+(m===dm?' selected':'')+'>'+String(m).padStart(2,'0')+'</option>';
+ const dchip=function(day,lbl,on){return '<button type="button" onclick="errPickDay(this,'+day+')" style="flex:1;padding:9px 4px;border-radius:10px;border:1px solid '+(on?'var(--gbr)':'var(--br)')+';background:'+(on?'rgba(201,164,76,.15)':'none')+';color:'+(on?'var(--go)':'var(--mu)')+';font-size:13px;font-weight:700">'+lbl+'</button>';};
  modalHTML='<div class="mbox"><div style="font-size:16px;font-weight:800;color:var(--go);text-align:center;margin-bottom:4px">➕ مهمة برّ</div>'
   +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:12px">يصلك تنبيه في وقتها ويعاود كل ١٠ دقائق حتى تُنجزها</div>'
   +'<input id="errText" class="inp" placeholder="ماذا؟ مثال: تفاح لأبي" style="width:100%;margin-bottom:8px">'
-  +'<input id="errWho" class="inp" placeholder="لِمَن؟ مثال: أبي" style="width:100%;margin-bottom:8px">'
-  +'<div style="display:flex;gap:8px;margin-bottom:12px"><input id="errDate" type="date" class="inp" value="'+locDate()+'" style="flex:1"><input id="errTime" type="time" class="inp" value="'+hh+'" style="flex:1"></div>'
+  +'<input id="errWho" class="inp" placeholder="لِمَن؟ مثال: أبي" style="width:100%;margin-bottom:10px">'
+  +'<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:5px">اليوم</div>'
+  +'<div style="display:flex;gap:8px;margin-bottom:12px">'+dchip(0,'اليوم',true)+dchip(1,'غداً',false)+dchip(2,'بعد غد',false)+'</div>'
+  +'<div style="font-size:12px;font-weight:700;color:var(--mu);margin-bottom:5px">الساعة</div>'
+  +'<div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:14px">'
+   +'<select id="errH" class="inp" style="flex:1;text-align:center;font-size:19px;font-weight:800">'+hopts+'</select>'
+   +'<span style="font-size:22px;color:var(--go);font-weight:900">:</span>'
+   +'<select id="errM" class="inp" style="flex:1;text-align:center;font-size:19px;font-weight:800">'+mopts+'</select>'
+  +'</div>'
   +'<button data-act="errsave" class="bg" style="width:100%;padding:12px;font-size:15px">💾 احفظ وذكّرني</button>'
   +'<button data-act="closemodal" style="width:100%;padding:10px;margin-top:8px;background:none;border:none;color:var(--mu);font-size:13px">إلغاء</button></div>';
  render();
@@ -5768,9 +5792,9 @@ document.addEventListener('click',function(e){
    const t=((document.getElementById('errText')||{}).value||'').trim();
    if(!t){toast('اكتب المهمة أولاً','warn');break;}
    const who=((document.getElementById('errWho')||{}).value||'').trim().slice(0,30);
-   const dt=(document.getElementById('errDate')||{}).value||locDate();
-   const tm=(document.getElementById('errTime')||{}).value||'08:00';
-   let at=0;try{at=new Date(dt+'T'+tm+':00').getTime();}catch(e){}
+   const h=parseInt((document.getElementById('errH')||{}).value)||8;
+   const mn=parseInt((document.getElementById('errM')||{}).value)||0;
+   let at=0;try{const base=new Date();base.setDate(base.getDate()+(_errDay||0));base.setHours(h,mn,0,0);at=base.getTime();}catch(e){}
    const id='e'+Date.now().toString(36);
    data.errands=data.errands||[];data.errands.push({id:id,text:t.slice(0,80),who:who,at:at,done:false});save();
    if(at>0){try{if(window.MTBNative&&MTBNative.scheduleReminder)MTBNative.scheduleReminder(id,String(at),'🤲 برّ'+(who?' — '+who:''),t.slice(0,80),'10');}catch(e){}}
