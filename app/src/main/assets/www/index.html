@@ -381,7 +381,8 @@ body.qy .qpage *{color:#e6d9b8 !important}
 .qread .qbody{padding-bottom:170px !important;overflow-x:auto !important}
 .qread .qbody[style*='display:block']{padding-bottom:96px !important;overflow-x:hidden !important}
 .qread .qbody:has(.mpage){padding-bottom:170px !important}
-.mseg{cursor:pointer;border-radius:6px;padding:0 1px}
+.mseg{cursor:pointer;border-radius:6px;padding:0 1px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mseg.mreach{box-shadow:inset 0 -3px 0 rgba(90,154,146,.85);background:rgba(90,154,146,.10)}
 .mseg.msel{background:rgba(201,164,76,.32);box-shadow:0 0 0 2px rgba(201,164,76,.45);border-radius:8px}
 .qread.qn .mseg.msel{background:rgba(224,192,112,.22)}
 .ayabar{position:fixed;left:10px;right:10px;bottom:calc(96px + env(safe-area-inset-bottom));max-width:540px;margin:0 auto;z-index:75;display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f2ead6;border:1.5px solid #c9a44c;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:9px 12px}
@@ -922,7 +923,7 @@ function save(){
  }
 }
 function hydrate(d){
- return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,dayStart:'fajr',...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,pin:undefined};
+ return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,dayStart:'fajr',...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,adhOrder:d.adhOrder||{},qReached:d.qReached||null,pin:undefined};
 }
 let _loadState='ok';
 function load(){
@@ -1525,13 +1526,22 @@ async function qadSection(){
  }
  return '<div style="margin-bottom:16px">'+h+'</div>';
 }
+function adhOrderKey(){return ui.adhTab==='salah'?('salah-'+ui.adhSalah):ui.adhTab;}
 function adhList(){
  let list;
  if(ui.adhTab==='sabah')list=ADK_SABAH;
  else if(ui.adhTab==='masa')list=ADK_MASA;
  else list=ADK_SALAH.filter(a=>!a.only||a.only.includes(ui.adhSalah));
- /* من باب التسهيل: الأذكار مرة واحدة أولاً، والمكرّرة (تحتاج عدّاً) في الأسفل —
-    ترتيب ثابت داخل كل مجموعة فلا يختلّ تسلسلها الأصلي */
+ /* ترتيبك المخصّص (إن وُجد) يلغي الترتيب التلقائي لهذا التبويب — يُحفظ في الذاكرة */
+ const ord=(data.adhOrder||{})[adhOrderKey()];
+ if(ord&&ord.length){
+  const pos={};ord.forEach(function(id,i){pos[id]=i;});
+  return list.slice().sort(function(a,b){
+   const pa=(pos[a.id]==null?9999:pos[a.id]),pb=(pos[b.id]==null?9999:pos[b.id]);
+   return pa-pb;
+  });
+ }
+ /* الافتراضي: الأذكار مرة واحدة أولاً، والمكرّرة (تحتاج عدّاً) في الأسفل — ثابت داخل كل مجموعة */
  const once=list.filter(a=>(a.c||1)<=1), reps=list.filter(a=>(a.c||1)>1);
  return once.concat(reps);
 }
@@ -2624,6 +2634,21 @@ function renderAdhkar(){
    :'<div class="notice">المعوذات مرة واحدة بعد هذه الصلاة</div>';
  }
 
+ /* وضع ترتيب الأذكار اليدوي بالأسهم — يُحفظ لكل تبويب على حدة */
+ if(ui.adhReorder){
+  const L=adhList();
+  const rows=L.map(function(it,i){return '<div class="acit" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:7px">'
+   +'<span style="flex:1;min-width:0"><b style="color:var(--tx);font-size:14px">'+it.n+'</b> <span style="color:var(--mu);font-size:11px">×'+arNum(it.c)+'</span></span>'
+   +'<button data-act="adhmove" data-id="'+it.id+'" data-dir="-1" class="bg" style="width:40px;height:40px;padding:0;font-size:18px"'+(i===0?' disabled':'')+'>↑</button>'
+   +'<button data-act="adhmove" data-id="'+it.id+'" data-dir="1" class="bg" style="width:40px;height:40px;padding:0;font-size:18px"'+(i===L.length-1?' disabled':'')+'>↓</button>'
+   +'</div>';}).join('');
+  return pastWrap('adhkar',dateChips,ui.adhDate!==TODAY)
+   +'<div class="at">'+tabBtns+'</div>'+salahPicker
+   +'<div class="notice" style="color:var(--go);border-color:var(--gbr);background:rgba(201,164,76,.06)">🔀 رتّب أذكارك بالأسهم — يُحفظ لهذا التبويب.</div>'
+   +'<div style="display:flex;gap:8px;margin-bottom:10px"><button data-act="adhreorder" class="bgo" style="flex:2;padding:12px;font-size:14px">✓ تم الترتيب</button><button data-act="adhorderreset" style="flex:1;padding:12px;font-size:12px;border:1px solid var(--br);border-radius:11px;background:none;color:var(--mu)">↩ الافتراضي</button></div>'
+   +rows;
+ }
+
  /* الوضع التسلسلي لليوم: ذكر واحد كبير، إصبعك لا يتحرك */
  if(isToday&&ui.adhSeq!==false){
   const pend=items.filter(it=>!ad[adhStateKey(it)]);
@@ -2646,7 +2671,7 @@ function renderAdhkar(){
   }
   return pastWrap('adhkar',dateChips,ui.adhDate!==TODAY)
   +'<div class="at">'+tabBtns+'</div>'+salahPicker
-  +'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button data-act="adhview" style="font-size:12px;color:var(--tl);padding:4px 10px;border:1px solid var(--tl);border-radius:8px">📋 عرض القائمة كاملة</button></div>'
+  +'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><button data-act="adhreorder" style="font-size:12px;color:var(--go);padding:4px 10px;border:1px solid var(--gbr);border-radius:8px">🔀 ترتيب</button><button data-act="adhview" style="font-size:12px;color:var(--tl);padding:4px 10px;border:1px solid var(--tl);border-radius:8px">📋 عرض القائمة كاملة</button></div>'
   +seqHTML;
  }
  const itemsHTML=items.map(item=>{
@@ -2667,7 +2692,7 @@ function renderAdhkar(){
  }).join('');
 
  return pastWrap('adhkar',dateChips,ui.adhDate!==TODAY)
- +(isToday?'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button data-act="adhview" style="font-size:12px;color:var(--tl);padding:4px 10px;border:1px solid var(--tl);border-radius:8px">🔂 الوضع التسلسلي</button></div>':'<div class="notice">📝 تعديل أذكار يوم: '+new Date(ui.adhDate+'T12:00:00').toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{weekday:'long',day:'numeric',month:'long'})+'</div>')
+ +(isToday?'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><button data-act="adhreorder" style="font-size:12px;color:var(--go);padding:4px 10px;border:1px solid var(--gbr);border-radius:8px">🔀 ترتيب</button><button data-act="adhview" style="font-size:12px;color:var(--tl);padding:4px 10px;border:1px solid var(--tl);border-radius:8px">🔂 الوضع التسلسلي</button></div>':'<div class="notice">📝 تعديل أذكار يوم: '+new Date(ui.adhDate+'T12:00:00').toLocaleDateString('ar-SA-u-ca-islamic-umalqura',{weekday:'long',day:'numeric',month:'long'})+'</div>')
  +'<div class="at">'+tabBtns+'</div>'+salahPicker+itemsHTML;
 }
 
@@ -5050,7 +5075,9 @@ function renderStats(){
   const rLbl={sleep:'😴 النوم',guests:'🫂 ضيوف',work:'💼 العمل',fun:'📱 الترفيه',other:'أخرى'};
   const reasonRows=Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];}).map(function(k){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--br);font-size:13px"><span>'+(rLbl[k]||k)+'</span><span style="color:var(--go);font-weight:800">'+arNum(rc[k])+'</span></div>';}).join('');
   const kLog=data.khatmaLog||{};
-  const timeCard='<div class="cb gold-cb"><div style="font-size:15px;font-weight:800;color:var(--go);margin-bottom:10px">⏱️ زمن قراءتك للقرآن</div>'
+  const _tdPg=(getRec(TODAY).read||0)+(getRec(TODAY).fr||0);
+  const timeCard='<div class="cb gold-cb"><div style="font-size:15px;font-weight:800;color:var(--go);margin-bottom:4px">⏱️ زمن قراءتك للقرآن</div>'
+   +'<div style="font-size:12px;color:var(--mu);margin-bottom:10px">اليوم: <b style="color:var(--go)">'+arNum(_tdPg)+'</b> صفحة • زمن صافٍ <b style="color:var(--g)">'+fmtDurLong(todayMs)+'</b> <span style="font-size:10px">(بلا وقت الغياب)</span></div>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
    +'<div style="text-align:center;background:rgba(201,164,76,.06);border:1px solid var(--gbr);border-radius:11px;padding:9px"><div style="font-size:14px;font-weight:900;color:var(--go)">'+fmtDurLong(todayMs)+'</div><div style="font-size:9px;color:var(--mu)">اليوم</div></div>'
    +'<div style="text-align:center;background:rgba(107,147,98,.06);border:1px solid rgba(107,147,98,.3);border-radius:11px;padding:9px"><div style="font-size:14px;font-weight:900;color:var(--g)">'+fmtDurLong(avgMs)+'</div><div style="font-size:9px;color:var(--mu)">متوسط/يوم</div></div>'
@@ -5396,33 +5423,14 @@ document.addEventListener('click',function(e){
     const ix=ui.selSet.indexOf(sa);
     if(ix>=0)ui.selSet.splice(ix,1);else ui.selSet.push(sa);
     ui.selAyah={sa:sa,p:reader?reader.page:0};
+    render();
    }else{
-    const sa=el.dataset.sa;
-    ui.selAyah={sa:sa,p:reader?reader.page:0};
-    const rect=el.getBoundingClientRect();
-    ui.spotlightPos = (rect.top < window.innerHeight/2) ? 'bottom' : 'top';
-    window.tafsirState = window.tafsirState || {cache:{}};
-    if(!tafsirState.cache[sa]){
-     ui.spotlightTafsir = '<div style="text-align:center;color:#8a6d1f;animation:pulse 1.5s infinite">جارٍ جلب التفسير الميسر...</div>';
-     fetch('https://api.alquran.cloud/v1/ayah/'+sa+'/ar.muyassar')
-      .then(r=>r.json()).then(j=>{
-       tafsirState.cache[sa] = (j&&j.data&&j.data.text)||'تعذر الجلب';
-       if(ui.selAyah && ui.selAyah.sa === sa) {
-         ui.spotlightTafsir = tafsirState.cache[sa];
-         render();
-       }
-      }).catch(e=>{
-       tafsirState.cache[sa] = 'تعذر الاتصال بالشبكة';
-       if(ui.selAyah && ui.selAyah.sa === sa) {
-         ui.spotlightTafsir = tafsirState.cache[sa];
-         render();
-       }
-      });
-    }else{
-     ui.spotlightTafsir = tafsirState.cache[sa];
-    }
+    /* لمسة واحدة سريعة = تحديد/إلغاء الآية التي وصلتَ إليها. اللمسة المطوّلة → التفسير والوسم */
+    const sa=el.dataset.sa,pp=sa.split(':');
+    if(data.qReached&&data.qReached.sa===sa){data.qReached=null;try{toast('أُزيل وسم الوصول','ok',1300);}catch(e){}}
+    else{data.qReached={sa:sa,s:+pp[0],a:+pp[1],page:reader?reader.page:0,ts:Date.now()};try{toast('📍 وُسِمت آيتك — لمسة مطوّلة للتفسير','ok',1600);}catch(e){}}
+    save();render();
    }
-   render();
    const bd2=document.querySelector('.qbody');if(bd2)bd2.scrollTop=st;
   }break;
   case 'multion':{ui.multiSel=true;ui.selSet=ui.selAyah?[ui.selAyah.sa]:[];render();}break;
@@ -5666,6 +5674,9 @@ document.addEventListener('click',function(e){
    ui.tasbih=0;data.tasbihN=0;modalHTML='';save();render();
   }break;
   case 'adhview':ui.adhSeq=!ui.adhSeq;render();break;
+  case 'adhreorder':ui.adhReorder=!ui.adhReorder;render();break;
+  case 'adhmove':{const key=adhOrderKey();let ord=(data.adhOrder&&data.adhOrder[key])?data.adhOrder[key].slice():adhList().map(x=>x.id);const id=el.dataset.id;let i=ord.indexOf(id);if(i<0){ord.push(id);i=ord.length-1;}const j=i+parseInt(el.dataset.dir);if(j>=0&&j<ord.length){const t=ord[i];ord[i]=ord[j];ord[j]=t;}data.adhOrder=data.adhOrder||{};data.adhOrder[key]=ord;save();render();}break;
+  case 'adhorderreset':{const key=adhOrderKey();if(data.adhOrder)delete data.adhOrder[key];save();render();toast('↩ استُرجع الترتيب الافتراضي');}break;
   case 'adhmode':ui.adhMode=el.dataset.v;render();window.scrollTo(0,0);break;
   case 'goduas':ui.tab='adhkar';ui.adhMode='duas';render();window.scrollTo(0,0);break;
   case 'duainc':{if(!data.duaReads)data.duaReads={};const o=el.dataset.o;data.duaReads[o]=(data.duaReads[o]||0)+1;save();render();}break;
@@ -6228,10 +6239,60 @@ function fmtDurLong(ms){
 }
 function readerPageDone(){
  if(!reader)return 0;
- const dt=Date.now()-(reader.tPage||Date.now());
+ /* حدّ خمول: صفحة مفتوحة بلا تقليب أكثر من ١٥ دقيقة لا تُحسب كلها قراءة فعلية */
+ const dt=Math.min(15*60*1000,Math.max(0,Date.now()-(reader.tPage||Date.now())));
  reader.tTotal=(reader.tTotal||0)+dt;reader.tPage=Date.now();
  return dt;
 }
+/* عدّاد القراءة يتوقّف (hold) عند مغادرة التطبيق: اتصال/تبديل تطبيق/قفل الشاشة.
+   نُزيح بداية الصفحة بمقدار الغياب، فلا يُحسب وقت خروجك ضمن قراءتك. */
+document.addEventListener('visibilitychange',function(){
+ if(typeof reader==='undefined'||!reader)return;
+ if(document.hidden){reader.hideAt=Date.now();}
+ else if(reader.hideAt){
+  const away=Date.now()-reader.hideAt;reader.hideAt=0;
+  if(away>0)reader.tPage=(reader.tPage||Date.now())+away;
+  if(away>10000){try{toast('▶️ استُؤنِفت القراءة — لم يُحسب وقت غيابك ('+fmtDurLong(away)+')','ok',2200);}catch(e){}}
+ }
+});
+/* اللمسة المطوّلة على الآية = التفسير الميسّر + الوسم (منبثق) */
+function ayahSpotlight(sa){
+ const bd=document.querySelector('.qbody');const st=bd?bd.scrollTop:0;
+ ui.selAyah={sa:sa,p:(typeof reader!=='undefined'&&reader)?reader.page:0};
+ const seg=document.querySelector('.mseg[data-sa="'+sa+'"]');
+ if(seg){const rect=seg.getBoundingClientRect();ui.spotlightPos=(rect.top<window.innerHeight/2)?'bottom':'top';}
+ window.tafsirState=window.tafsirState||{cache:{}};
+ if(!tafsirState.cache[sa]){
+  ui.spotlightTafsir='<div style="text-align:center;color:#8a6d1f;animation:pulse 1.5s infinite">جارٍ جلب التفسير الميسر...</div>';
+  fetch('https://api.alquran.cloud/v1/ayah/'+sa+'/ar.muyassar').then(function(r){return r.json();}).then(function(j){tafsirState.cache[sa]=(j&&j.data&&j.data.text)||'تعذر الجلب';if(ui.selAyah&&ui.selAyah.sa===sa){ui.spotlightTafsir=tafsirState.cache[sa];render();}}).catch(function(){tafsirState.cache[sa]='تعذر الاتصال بالشبكة';if(ui.selAyah&&ui.selAyah.sa===sa){ui.spotlightTafsir=tafsirState.cache[sa];render();}});
+ }else{ui.spotlightTafsir=tafsirState.cache[sa];}
+ render();
+ const bd2=document.querySelector('.qbody');if(bd2)bd2.scrollTop=st;
+}
+/* كاشف اللمسة المطوّلة (~٤٥٠مللي) على الآيات — بلا التباس مع اللمسة القصيرة (الوسم) */
+(function(){
+ let tmr=null,lsa=null,fired=false,x0=0,y0=0;
+ document.addEventListener('pointerdown',function(e){
+  if(ui.multiSel)return;
+  const seg=e.target&&e.target.closest?e.target.closest('.mseg[data-act="ayasel"]'):null;
+  if(!seg)return;
+  lsa=seg.dataset.sa;fired=false;x0=e.clientX;y0=e.clientY;
+  clearTimeout(tmr);
+  tmr=setTimeout(function(){fired=true;try{if(navigator.vibrate)navigator.vibrate(25);}catch(e){}ayahSpotlight(lsa);},450);
+ },true);
+ document.addEventListener('pointermove',function(e){
+  if(tmr&&(Math.abs(e.clientX-x0)>10||Math.abs(e.clientY-y0)>10)){clearTimeout(tmr);tmr=null;}
+ },true);
+ function _end(){clearTimeout(tmr);tmr=null;}
+ document.addEventListener('pointerup',_end,true);
+ document.addEventListener('pointercancel',_end,true);
+ document.addEventListener('click',function(e){
+  if(!fired)return;
+  const seg=e.target&&e.target.closest?e.target.closest('.mseg[data-act="ayasel"]'):null;
+  if(seg){e.stopPropagation();e.preventDefault();}
+  fired=false;
+ },true);
+})();
 function khatmaSpanMs(){
  /* مجموع أزمنة الختمة الجارية المسجّلة + استثناء الختمة الحالية بتقدير النصف */
  let ms=0;const kt=data.khatmaTimes||{};
@@ -6420,7 +6481,8 @@ function renderReader(){
     return '<div class="mline maya" style="font-family:QCFP'+p+',serif">'+L[1].map(sg=>{
      const sa=sg[0]+':'+sg[1];
      const on=multi?selSet.indexOf(sa)>=0:sa===selSA;
-     return '<span class="mseg'+(on?' msel':'')+(tagSet[sa]?' mtag':'')+'" data-act="ayasel" data-sa="'+sa+'">'+sg[2]+'</span>';
+     const reached=(data.qReached&&data.qReached.sa===sa&&data.qReached.page===p);
+     return '<span class="mseg'+(on?' msel':'')+(tagSet[sa]?' mtag':'')+(reached?' mreach':'')+'" data-act="ayasel" data-sa="'+sa+'">'+sg[2]+'</span>';
     }).join('')+'</div>';
    }).join('');
    let ayaBar='';
