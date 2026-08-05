@@ -923,7 +923,7 @@ function save(){
  }
 }
 function hydrate(d){
- return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,dayStart:'fajr',...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,adhOrder:d.adhOrder||{},qReached:d.qReached||null,pin:undefined};
+ return {records:d.records||{},khatmas:(d.khatmas||[]).map(k=>HIJRI_OV[k.date]?{...k,hijri:HIJRI_OV[k.date]}:k),quranGoal:d.quranGoal||{times:1,period:30},dailyDhikr:d.dailyDhikr||{},duaReads:d.duaReads||{},dhikrLog:d.dhikrLog||[],hifzSurah:d.hifzSurah||'',mushafView:d.mushafView||'taj',loc:d.loc||null,iqama:{...IQAMA_DEF,...(d.iqama||{})},favHadith:d.favHadith||[],reciter:d.reciter||'kurdi',audioLog:d.audioLog||[],samKhatma:d.samKhatma||{pos:0,count:0},reciterBases:d.reciterBases||{},audioResume:d.audioResume||null,settings:{fontScale:1,dayStart:'fajr',...(d.settings||{})},intentions:d.intentions||{},hifz:d.hifz||{pages:{}},audioPos:d.audioPos||{},reciterReads:d.reciterReads||{},books:d.books||{},bookDays:d.bookDays||{},tadabbur:d.tadabbur||[],faidat:d.faidat||[],customBooks:d.customBooks||{},ayahMarks:d.ayahMarks||[],ayahCats:d.ayahCats||['تدبر','قصص الأنبياء','أحكام وعمل','دعاء وذكر','فضائل'],mScale:d.mScale||1,madinaDl:!!d.madinaDl,tafsirDl:!!d.tafsirDl,theme:d.theme,fontScale:d.fontScale,lastBackup:d.lastBackup,tasbihN:d.tasbihN||0,tasbihD:d.tasbihD||'',hsets:d.hsets||{},mushafDl:!!d.mushafDl,qFull:d.qFull,qNight:!!d.qNight,tawaf:d.tawaf||null,audioFav:d.audioFav||[],alerts:d.alerts||null,bkMarks:d.bkMarks||{},bkTheme:d.bkTheme,bkLH:d.bkLH,ttsRate:d.ttsRate,adhTtsMode:d.adhTtsMode,ttsVoice:d.ttsVoice,cntsDay:d.cntsDay||null,toastPos:d.toastPos||'top',dispMode:d.dispMode||'full',qaudio:d.qaudio||null,khatmaTimes:d.khatmaTimes||{},khatmaLog:d.khatmaLog||{},khatmaTimeBaseline:d.khatmaTimeBaseline,adhOrder:d.adhOrder||{},qReached:d.qReached||null,errands:d.errands||[],kin:d.kin||[],kinCheckTime:d.kinCheckTime||'17:00',pin:undefined};
 }
 let _loadState='ok';
 function load(){
@@ -1765,6 +1765,88 @@ function nowWindow(){
   act:'data-act="goduas"',btn:'🌙 افتح الأدعية',tone:'tl'});
  return W.length?W[0]:null;
 }
+/* ═══ نظام برّ الوالدين وصلة الرحم ═══ */
+function kinDays(k){
+ if(!k||!k.last)return 999;
+ try{return Math.max(0,Math.floor((Date.now()-new Date(k.last+'T12:00:00').getTime())/864e5));}catch(e){return 999;}
+}
+function kinAgo(d){
+ if(d>=999)return 'لم تتواصل بعد';
+ if(d===0)return 'اليوم';
+ if(d===1)return 'أمس';
+ if(d<30)return 'منذ '+arNum(d)+' يوم';
+ const m=Math.floor(d/30);return 'منذ '+(m===1?'شهر':arNum(m)+' أشهر')+(d%30?' و'+arNum(d%30)+' يوم':'');
+}
+function familyCard(){
+ const errs=(data.errands||[]).filter(function(e){return !e.done;}).sort(function(a,b){return (a.at||0)-(b.at||0);});
+ const kin=(data.kin||[]).map(function(k){return {k:k,d:kinDays(k)};}).sort(function(a,b){return b.d-a.d;});
+ let h='<div style="margin:12px 13px 0"><div class="cb" style="padding:0;overflow:hidden">';
+ h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 13px 8px"><span style="font-size:14px;font-weight:900;color:var(--go)">🤲 برّ وصلة</span><span style="display:flex;gap:6px"><button data-act="erradd" style="font-size:11px;font-weight:800;color:var(--g);background:rgba(107,147,98,.12);border:1px solid var(--g2);border-radius:9px;padding:5px 9px">➕ برّ</button><button data-act="kinadd" style="font-size:11px;font-weight:800;color:var(--tl);background:rgba(90,154,146,.12);border:1px solid var(--tl);border-radius:9px;padding:5px 9px">➕ قريب</button></span></div>';
+ if(errs.length){
+  h+='<div style="padding:0 13px 6px">';
+  errs.slice(0,5).forEach(function(e){
+   const tm=e.at?new Date(e.at).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}):'';
+   const due=e.at&&Date.now()>=e.at;
+   h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--br)">'
+    +'<button data-act="errdone" data-id="'+e.id+'" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--g2);background:'+(due?'rgba(194,91,78,.12)':'rgba(107,147,98,.1)')+';color:var(--g);font-size:15px;flex:0 0 auto">✓</button>'
+    +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--tx)">'+escH(e.text)+'</div><div style="font-size:10px;color:'+(due?'var(--rd)':'var(--mu)')+'">'+(e.who?escH(e.who)+' • ':'')+(tm?(due?'⏰ حان وقتها ('+tm+')':tm):'بلا وقت')+'</div></div>'
+    +'<button data-act="erradel" data-id="'+e.id+'" style="color:var(--mu);font-size:15px;background:none;border:none;flex:0 0 auto">🗑</button>'
+    +'</div>';
+  });
+  h+='</div>';
+ }
+ if(kin.length){
+  const top=kin[0];
+  if(top.d>=1){
+   h+='<div style="margin:8px 13px;padding:10px 12px;background:rgba(90,154,146,.08);border:1px solid var(--tl);border-radius:12px">'
+    +'<div style="font-size:13px;font-weight:800;color:var(--tl)">هل تواصلت مع '+escH(top.k.name)+' اليوم؟</div>'
+    +'<div style="font-size:11px;color:var(--mu);margin:2px 0 8px">'+escH(top.k.rel||'')+' • '+kinAgo(top.d)+'</div>'
+    +'<div style="display:flex;gap:8px"><button data-act="kinyes" data-id="'+top.k.id+'" class="bg" style="flex:1;padding:9px;font-size:13px">✅ نعم، تواصلت</button><button data-act="kinno" data-id="'+top.k.id+'" style="flex:1;padding:9px;font-size:13px;border:1px solid var(--br);border-radius:11px;background:none;color:var(--mu)">لاحقاً</button></div>'
+    +'</div>';
+  }
+  h+='<details class="arcDet" id="kinDet" style="margin:0 13px 12px;border-top:1px solid var(--br);padding-top:8px"><summary style="font-size:12px;color:var(--tl);font-weight:700">قائمة العائلة ('+arNum(kin.length)+')</summary>';
+  kin.forEach(function(x){
+   h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--br)">'
+    +'<div style="flex:1;min-width:0"><span style="font-size:13px;color:var(--tx)">'+escH(x.k.name)+'</span> <span style="font-size:10px;color:var(--mu)">'+escH(x.k.rel||'')+'</span><div style="font-size:10px;color:'+(x.d>=14?'var(--rd)':'var(--mu)')+'">'+kinAgo(x.d)+'</div></div>'
+    +'<button data-act="kinyes" data-id="'+x.k.id+'" style="font-size:11px;color:var(--g);background:rgba(107,147,98,.1);border:1px solid var(--g2);border-radius:8px;padding:5px 9px">✅ تواصلت</button>'
+    +'<button data-act="kindel" data-id="'+x.k.id+'" style="color:var(--mu);font-size:14px;background:none;border:none">🗑</button>'
+    +'</div>';
+  });
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 2px"><span style="font-size:11px;color:var(--mu)">⏰ تذكير صلة الرحم اليومي</span><input type="time" onchange="setKinCheckTime(this.value)" value="'+escH(data.kinCheckTime||'17:00')+'" class="inp" style="width:110px;padding:6px"></div>';
+  h+='</details>';
+ }
+ if(!errs.length&&!kin.length){
+  h+='<div style="padding:4px 13px 14px;font-size:11px;color:var(--mu);line-height:1.7">أضِف مهام برّ والديك (بتنبيه في وقتٍ تحدّده يعاود كل ١٠ دقائق حتى تُنجزها) وأقاربك لتذكيرك بصلتهم.<br>«من سرّه أن يُبسط له في رزقه ويُنسأ له في أثره فليصل رحمه» — متفق عليه.</div>';
+ }
+ h+='</div></div>';
+ return h;
+}
+function setKinCheckTime(v){
+ if(!v)return;data.kinCheckTime=v;save();
+ try{if(window.MTBNative&&MTBNative.setKinCheck)MTBNative.setKinCheck(v);}catch(e){}
+ try{toast('⏰ تذكير صلة الرحم يومياً '+v,'ok');}catch(e){}
+}
+function errandModal(){
+ const defT=new Date(Date.now()+3600000);
+ const hh=String(defT.getHours()).padStart(2,'0')+':'+String(defT.getMinutes()).padStart(2,'0');
+ modalHTML='<div class="mbox"><div style="font-size:16px;font-weight:800;color:var(--go);text-align:center;margin-bottom:4px">➕ مهمة برّ</div>'
+  +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:12px">يصلك تنبيه في وقتها ويعاود كل ١٠ دقائق حتى تُنجزها</div>'
+  +'<input id="errText" class="inp" placeholder="ماذا؟ مثال: تفاح لأبي" style="width:100%;margin-bottom:8px">'
+  +'<input id="errWho" class="inp" placeholder="لِمَن؟ مثال: أبي" style="width:100%;margin-bottom:8px">'
+  +'<div style="display:flex;gap:8px;margin-bottom:12px"><input id="errDate" type="date" class="inp" value="'+locDate()+'" style="flex:1"><input id="errTime" type="time" class="inp" value="'+hh+'" style="flex:1"></div>'
+  +'<button data-act="errsave" class="bg" style="width:100%;padding:12px;font-size:15px">💾 احفظ وذكّرني</button>'
+  +'<button data-act="closemodal" style="width:100%;padding:10px;margin-top:8px;background:none;border:none;color:var(--mu);font-size:13px">إلغاء</button></div>';
+ render();
+}
+function kinModal(){
+ modalHTML='<div class="mbox"><div style="font-size:16px;font-weight:800;color:var(--go);text-align:center;margin-bottom:4px">➕ إضافة قريب</div>'
+  +'<div style="font-size:11px;color:var(--mu);text-align:center;margin-bottom:12px">نذكّرك بصلته — تضغط «تواصلت» فيبدأ العدّ من جديد</div>'
+  +'<input id="kinName" class="inp" placeholder="الاسم — مثال: عهود" style="width:100%;margin-bottom:8px">'
+  +'<input id="kinRel" class="inp" placeholder="القرابة — مثال: أختي" style="width:100%;margin-bottom:12px">'
+  +'<button data-act="kinsave" class="bg" style="width:100%;padding:12px;font-size:15px">💾 أضِف</button>'
+  +'<button data-act="closemodal" style="width:100%;padding:10px;margin-top:8px;background:none;border:none;color:var(--mu);font-size:13px">إلغاء</button></div>';
+ render();
+}
 function nowCard(){
  ui._nwEndMs=0;
  let w=null;try{w=nowWindow();}catch(e){return '';}
@@ -2433,6 +2515,7 @@ ui._kun='';
  +'<div class="hero2">'+heroNow(rec)+'</div>'
  +pulseStrip(rec)
  +dayThread(rec)
+ +familyCard()
  +missNote
  +duo
  +'<div style="margin:12px 13px 0">'+sect('sunT','📿','السنن الرواتب — اليوم كاملاً','<div class="sg">'+sunnahItemsToday(rec)+'</div>')+'</div>'
@@ -5678,6 +5761,32 @@ document.addEventListener('click',function(e){
   case 'adhreorder':ui.adhReorder=!ui.adhReorder;render();break;
   case 'adhmove':{const key=adhOrderKey();let ord=(data.adhOrder&&data.adhOrder[key])?data.adhOrder[key].slice():adhList().map(x=>x.id);const id=el.dataset.id;let i=ord.indexOf(id);if(i<0){ord.push(id);i=ord.length-1;}const j=i+parseInt(el.dataset.dir);if(j>=0&&j<ord.length){const t=ord[i];ord[i]=ord[j];ord[j]=t;}data.adhOrder=data.adhOrder||{};data.adhOrder[key]=ord;save();render();}break;
   case 'adhorderreset':{const key=adhOrderKey();if(data.adhOrder)delete data.adhOrder[key];save();render();toast('↩ استُرجع الترتيب الافتراضي');}break;
+  /* ═══ برّ الوالدين وصلة الرحم ═══ */
+  case 'erradd':errandModal();break;
+  case 'kinadd':kinModal();break;
+  case 'errsave':{
+   const t=((document.getElementById('errText')||{}).value||'').trim();
+   if(!t){toast('اكتب المهمة أولاً','warn');break;}
+   const who=((document.getElementById('errWho')||{}).value||'').trim().slice(0,30);
+   const dt=(document.getElementById('errDate')||{}).value||locDate();
+   const tm=(document.getElementById('errTime')||{}).value||'08:00';
+   let at=0;try{at=new Date(dt+'T'+tm+':00').getTime();}catch(e){}
+   const id='e'+Date.now().toString(36);
+   data.errands=data.errands||[];data.errands.push({id:id,text:t.slice(0,80),who:who,at:at,done:false});save();
+   if(at>0){try{if(window.MTBNative&&MTBNative.scheduleReminder)MTBNative.scheduleReminder(id,String(at),'🤲 برّ'+(who?' — '+who:''),t.slice(0,80),'10');}catch(e){}}
+   modalHTML='';render();toast(at>Date.now()?'✅ سيصلك تنبيه في وقتها':'✅ أُضيفت المهمة','ok');
+  }break;
+  case 'errdone':{const id=el.dataset.id;try{if(window.MTBNative&&MTBNative.cancelReminder)MTBNative.cancelReminder(id);}catch(e){}data.errands=(data.errands||[]).filter(function(e){return e.id!==id;});save();render();toast('✅ تقبّل الله برّك','ok');}break;
+  case 'erradel':{const id=el.dataset.id;try{if(window.MTBNative&&MTBNative.cancelReminder)MTBNative.cancelReminder(id);}catch(e){}data.errands=(data.errands||[]).filter(function(e){return e.id!==id;});save();render();}break;
+  case 'kinsave':{
+   const n=((document.getElementById('kinName')||{}).value||'').trim();
+   if(!n){toast('اكتب الاسم أولاً','warn');break;}
+   const r=((document.getElementById('kinRel')||{}).value||'').trim().slice(0,20);
+   data.kin=data.kin||[];data.kin.push({id:'k'+Date.now().toString(36),name:n.slice(0,30),rel:r,last:locDate()});save();modalHTML='';render();toast('✅ أُضيف — سنذكّرك بصلته','ok');
+  }break;
+  case 'kinyes':{const k=(data.kin||[]).find(function(x){return x.id===el.dataset.id;});if(k){k.last=locDate();save();render();toast('🤝 وصلتَ رحمك — بارك الله لك','ok');}}break;
+  case 'kinno':break;
+  case 'kindel':{data.kin=(data.kin||[]).filter(function(x){return x.id!==el.dataset.id;});save();render();}break;
   case 'adhmode':ui.adhMode=el.dataset.v;render();window.scrollTo(0,0);break;
   case 'goduas':ui.tab='adhkar';ui.adhMode='duas';render();window.scrollTo(0,0);break;
   case 'duainc':{if(!data.duaReads)data.duaReads={};const o=el.dataset.o;data.duaReads[o]=(data.duaReads[o]||0)+1;save();render();}break;
@@ -6791,6 +6900,15 @@ applyLoc();
 try{TODAY=worshipDate();}catch(e){}
 render();
 resolveReciters();
+/* مزامنة تذكيرات البرّ وصلة الرحم مع الطبقة الأصلية (تصمد بعد إعادة التثبيت/الاستعادة) */
+window.__mtbRemindersSync=function(){
+ try{
+  if(!window.MTBNative)return;
+  if(MTBNative.setKinCheck)MTBNative.setKinCheck(data.kinCheckTime||'17:00');
+  if(MTBNative.scheduleReminder&&data.errands){var now=Date.now();data.errands.forEach(function(e){if(!e.done&&e.at&&e.at>now){try{MTBNative.scheduleReminder(e.id,String(e.at),'🤲 برّ'+(e.who?' — '+e.who:''),String(e.text||''),'10');}catch(x){}}});}
+ }catch(e){}
+};
+try{__mtbRemindersSync();}catch(e){}
 updateClock();
 setInterval(updateClock,1000);
 /* استئناف السماع تلقائياً عند الفتح — يُستأنف في مساره الأصلي (ختمة أو حر).

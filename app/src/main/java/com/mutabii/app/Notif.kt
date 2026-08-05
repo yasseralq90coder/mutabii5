@@ -9,9 +9,12 @@ object Notif {
     const val CH_PRE = "mtb_pre"
     const val CH_WAKE = "mtb_wake"
     const val CH_MEDIA = "mtb_media"
+    const val CH_TASK = "mtb_task"
     const val ID_ADHAN = 1001
     const val ID_WAKE = 1002
     const val ID_PRE = 1003
+    const val ID_KIN = 1004
+    const val ID_TASK_BASE = 5000   // + بصمة معرّف التذكير
 
     fun ensure(c: Context) {
         val nm = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -19,6 +22,7 @@ object Notif {
         chan(nm, CH_PRE, "قرب وقت الصلاة", NotificationManager.IMPORTANCE_DEFAULT, true, true)
         chan(nm, CH_WAKE, "منبّه الاستيقاظ", NotificationManager.IMPORTANCE_HIGH, false, true)
         chan(nm, CH_MEDIA, "مشغّل القرآن", NotificationManager.IMPORTANCE_LOW, false, false)
+        chan(nm, CH_TASK, "برّ الوالدين وصلة الرحم", NotificationManager.IMPORTANCE_HIGH, true, true)
     }
 
     private fun chan(

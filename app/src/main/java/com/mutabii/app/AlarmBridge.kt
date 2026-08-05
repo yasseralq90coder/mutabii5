@@ -63,6 +63,30 @@ class AlarmBridge(private val ctx: Context) {
     @JavascriptInterface
     fun ping(): String = "ok"
 
+    /* ═══ تذكيرات برّ الوالدين + فحص صلة الرحم اليومي ═══ */
+
+    /** يجدول تذكير برّ في وقت محدّد، يعاود كل repeatMin دقيقة حتى إنجاز المهمة. */
+    @JavascriptInterface
+    fun scheduleReminder(id: String, atMs: String, title: String, body: String, repeatMin: String) {
+        try {
+            val at = atMs.toLongOrNull() ?: return
+            val rep = repeatMin.toIntOrNull() ?: 0
+            AlarmScheduler.scheduleReminder(ctx, id, at, title, body, rep)
+        } catch (_: Exception) {}
+    }
+
+    /** يُلغي تذكيراً عند إنجاز المهمة أو حذفها. */
+    @JavascriptInterface
+    fun cancelReminder(id: String) {
+        try { AlarmScheduler.cancelReminder(ctx, id) } catch (_: Exception) {}
+    }
+
+    /** يضبط وقت الفحص اليومي لصلة الرحم (HH:mm). */
+    @JavascriptInterface
+    fun setKinCheck(hhmm: String) {
+        try { AlarmScheduler.scheduleKinCheck(ctx, hhmm) } catch (_: Exception) {}
+    }
+
     /* ═══ إعدادات التنبيهات — مصدر الحقيقة هو Prefs الأصلية ═══
        الصفحة تعرض وتكتب هنا مباشرة، فما تراه في الشاشة هو ما يرنّ فعلاً. */
 

@@ -19,5 +19,8 @@ class BootReceiver : BroadcastReceiver() {
         }
         if (!ok) return
         try { AlarmScheduler.rescheduleAll(context) } catch (_: Exception) {}
+        // تذكيرات البرّ + فحص صلة الرحم اليومي تصمد بعد الإقلاع/تحديث التطبيق
+        try { AlarmScheduler.rescheduleReminders(context) } catch (_: Exception) {}
+        try { AlarmScheduler.scheduleKinCheck(context, ReminderStore.kinCheck(context)) } catch (_: Exception) {}
     }
 }

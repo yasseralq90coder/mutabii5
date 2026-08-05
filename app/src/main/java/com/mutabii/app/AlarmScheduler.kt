@@ -232,4 +232,83 @@ object AlarmScheduler {
             scheduleExact(am, c, t, pi)
         } catch (_: Exception) {}
     }
+
+    /* ═══ تذكيرات برّ الوالدين + فحص صلة الرحم اليومي ═══ */
+    private const val REM_BASE = CODE_BASE + 300000   // مدى أكواد التذكيرات
+    private const val KIN_CODE = CODE_BASE + 95000     // كود الفحص اليومي لصلة الرحم
+
+    /** كود طلب ثابت مشتقّ من معرّف التذكير — نفسه للجدولة والإلغاء. */
+    private fun remCode(id: String): Int = REM_BASE + Math.abs(id.hashCode() % 60000)
+
+    /** يجدول تذكير برّ (يخزّنه ثم يسجّله كمنبّه دقيق). */
+    fun scheduleReminder(c: Context, id: String, at: Long, title: String, body: String, rep: Int) {
+        ReminderStore.put(c, id, at, title, body, rep)
+        registerReminder(c, id, at, title, body, rep)
+    }
+
+    private fun registerReminder(c: Context, id: String, at: Long, title: String, body: String, rep: Int) {
+        try {
+            val am = c.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val i = Intent(c, AlarmReceiver::class.java).apply {
+                action = ACTION_FIRE
+                putExtra("type", "reminder")
+                putExtra("rid", id)
+                putExtra("title", title); putExtra("text", body)
+                putExtra("rep", rep)
+            }
+            val pi = PendingIntent.getBroadcast(
+                c, remCode(id), i,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            scheduleExact(am, c, at, pi)
+        } catch (_: Exception) {}
+    }
+
+    /** يُلغي تذكيراً (عند إنجاز المهمة أو حذفها). */
+    fun cancelReminder(c: Context, id: String) {
+        ReminderStore.remove(c, id)
+        try {
+            val am = c.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val base = Intent(c, AlarmReceiver::class.java).apply { action = ACTION_FIRE }
+            val pi = PendingIntent.getBroadcast(
+                c, remCode(id), base,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            ) ?: return
+            am.cancel(pi); pi.cancel()
+        } catch (_: Exception) {}
+    }
+
+    /** يعيد جدولة كل التذكيرات المخزّنة (بعد الإقلاع/تحديث التطبيق). */
+    fun rescheduleReminders(c: Context) {
+        try {
+            val arr = ReminderStore.all(c)
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                registerReminder(
+                    c, o.optString("id"), o.optLong("at"),
+                    o.optString("title"), o.optString("body"), o.optInt("rep")
+                )
+            }
+        } catch (_: Exception) {}
+    }
+
+    /** يجدول الفحص اليومي لصلة الرحم في وقت HH:mm (ويعيد جدولة نفسه كل يوم). */
+    fun scheduleKinCheck(c: Context, hhmm: String) {
+        try {
+            ReminderStore.setKinCheck(c, hhmm)
+            val p = hhmm.split(":")
+            val h = p.getOrNull(0)?.toIntOrNull() ?: 17
+            val m = p.getOrNull(1)?.toIntOrNull() ?: 0
+            val at = nextAt(System.currentTimeMillis(), h, m)
+            val am = c.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val i = Intent(c, AlarmReceiver::class.java).apply {
+                action = ACTION_FIRE; putExtra("type", "kincheck")
+            }
+            val pi = PendingIntent.getBroadcast(
+                c, KIN_CODE, i,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            scheduleExact(am, c, at, pi)
+        } catch (_: Exception) {}
+    }
 }

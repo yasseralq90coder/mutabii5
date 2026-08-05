@@ -17,11 +17,15 @@ class AlarmReceiver : BroadcastReceiver() {
                 "maint" -> { /* إعادة الجدولة فقط */ }
                 "wake" -> fireWake(context, intent)
                 "pre" -> firePre(context, intent)
+                "reminder" -> fireReminder(context, intent)
+                "kincheck" -> fireKinCheck(context)
                 else -> fireAdhan(context, intent, type) // adhan | iqama
             }
         } catch (_: Exception) {}
-        // إعادة تعبئة أفق الجدولة بعد كل إطلاق
-        try { AlarmScheduler.rescheduleAll(context) } catch (_: Exception) {}
+        // إعادة تعبئة أفق جدولة الصلاة بعد كل إطلاق — عدا التذكيرات (تدير جدولتها بنفسها)
+        if (type != "reminder" && type != "kincheck") {
+            try { AlarmScheduler.rescheduleAll(context) } catch (_: Exception) {}
+        }
     }
 
     private fun firePre(c: Context, i: Intent) {
@@ -100,6 +104,53 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra("title", title); putExtra("text", text)
         }
         try { c.startActivity(act) } catch (_: Exception) {}
+    }
+
+    private fun fireReminder(c: Context, i: Intent) {
+        val rid = i.getStringExtra("rid") ?: return
+        // إن أُلغيت المهمة (لم تعد في المخزن) فلا نُطلق ولا نعاود
+        if (ReminderStore.get(c, rid) == null) return
+        val title = i.getStringExtra("title") ?: "🤲 تذكير برّ"
+        val text = i.getStringExtra("text") ?: ""
+        val rep = i.getIntExtra("rep", 0)
+        val open = PendingIntent.getActivity(
+            c, 41, Intent(c, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val n = Notification.Builder(c, Notif.CH_TASK)
+            .setSmallIcon(R.drawable.ic_notify)
+            .setContentTitle(title).setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(text))
+            .setCategory(Notification.CATEGORY_REMINDER)
+            .setAutoCancel(true).setContentIntent(open)
+            .build()
+        (c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(Notif.ID_TASK_BASE + Math.abs(rid.hashCode() % 1000), n)
+        // معاودة كل rep دقيقة حتى تُنجز المهمة (تُلغى بإنجازها من التطبيق)
+        if (rep > 0) {
+            val next = System.currentTimeMillis() + rep * 60000L
+            try { AlarmScheduler.scheduleReminder(c, rid, next, title, text, rep) } catch (_: Exception) {}
+        } else {
+            try { ReminderStore.remove(c, rid) } catch (_: Exception) {}
+        }
+    }
+
+    private fun fireKinCheck(c: Context) {
+        val open = PendingIntent.getActivity(
+            c, 42, Intent(c, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val n = Notification.Builder(c, Notif.CH_TASK)
+            .setSmallIcon(R.drawable.ic_notify)
+            .setContentTitle("🤲 صلة الرحم")
+            .setContentText("تفقّد من لم تصله من أهلك اليوم — سلامٌ أو اتصال يكفي")
+            .setCategory(Notification.CATEGORY_REMINDER)
+            .setAutoCancel(true).setContentIntent(open)
+            .build()
+        (c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(Notif.ID_KIN, n)
+        // أعد جدولة فحص الغد
+        try { AlarmScheduler.scheduleKinCheck(c, ReminderStore.kinCheck(c)) } catch (_: Exception) {}
     }
 
     private fun startFg(c: Context, svc: Intent) {
